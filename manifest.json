@@ -1,0 +1,14 @@
+{
+  "name": "Orion Battle — WW2 Combat",
+  "short_name": "Orion Battle",
+  "description": "WW2 FPS oyunu — askerler, tanklar, 7 silah ve akıllı AI",
+  "start_url": "/",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0f0f14",
+  "theme_color": "#4ae3ff",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
