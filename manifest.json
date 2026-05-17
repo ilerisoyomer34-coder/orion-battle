@@ -1,7 +1,7 @@
 {
-  "name": "Orion Battle — WW2 Combat",
-  "short_name": "Orion Battle",
-  "description": "WW2 FPS oyunu — askerler, tanklar, 7 silah ve akıllı AI",
+  "name": "WW3",
+  "short_name": "WW3",
+  "description": "FPS savaş oyunu — askerler, tanklar, 7 silah ve akıllı AI",
   "start_url": "/",
   "display": "fullscreen",
   "orientation": "landscape",

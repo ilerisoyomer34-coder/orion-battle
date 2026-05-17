@@ -1,4 +1,4 @@
-const CACHE = 'orion-battle-v1';
+const CACHE = 'ww3-v1';
 const ASSETS = [
   '/',
   '/index.html',
