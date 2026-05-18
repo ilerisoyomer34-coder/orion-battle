@@ -1364,8 +1364,8 @@ document.addEventListener('wheel',function(e){
 },{passive:true});
 document.addEventListener('mousemove',function(e){
   if(!document.pointerLockElement)return;
-  yaw-=e.movementX*.0013; pitch-=e.movementY*.0013;
-  pitch=Math.max(-Math.PI/2.3,Math.min(Math.PI/2.3,pitch));
+  yaw-=e.movementX*.0028; pitch-=e.movementY*.0028;
+  pitch=Math.max(-Math.PI/2.1,Math.min(Math.PI/2.1,pitch));
   camPivot.rotation.y=yaw; camera.rotation.x=pitch;
 });
 document.addEventListener('mousedown',function(e){
