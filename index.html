@@ -1020,8 +1020,7 @@ function doShoot() {
   if(!GS.running||GS.playerDead||GS.reloading)return;
   var w=WEAPONS[curWeapon],pa=playerAmmo[curWeapon];
   if(pa.cur<=0){startReload();return;}
-  // Minigun spinup — timer tryShoot'ta artıyor, burada sadece eşik kontrolü
-  if(w.spinup&&spinupTimer<w.spinup*.75)return;
+  // Minigun: spinupTimer tryShoot'ta artıyor, engel yok — anında ateşler
   pa.cur--;
   document.getElementById('abig').textContent=pa.cur;
   document.getElementById('wa'+curWeapon).textContent=pa.cur;
@@ -1067,11 +1066,13 @@ function tryShoot(dt) {
   var w=WEAPONS[curWeapon];
   if(w.spinup){
     if(mouseDown){spinupTimer=Math.min(w.spinup,spinupTimer+dt);}
-    else{spinupTimer=Math.max(0,spinupTimer-dt*1.2);return;}
+    else{spinupTimer=Math.max(0,spinupTimer-dt*1.5);}
   }
   if(!mouseDown) return;
+  // Minigun: ateş hızı spinupTimer'a göre artıyor, anında başlar
+  var rate = w.spinup ? w.rate/(0.3+spinupTimer/w.spinup*0.7) : w.rate;
   shootCooldown-=dt;
-  if(shootCooldown<=0){shootCooldown=w.rate;if(w.auto||w.spinup)doShoot();}
+  if(shootCooldown<=0){shootCooldown=rate;if(w.auto||w.spinup)doShoot();}
 }
 
 function startReload() {
