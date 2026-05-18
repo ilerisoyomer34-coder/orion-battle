@@ -154,7 +154,7 @@ var scene = new THREE.Scene();
 scene.fog = new THREE.Fog(0x8a9fa8, 55, 380);
 scene.background = new THREE.Color(0x7a9fb0);
 
-var camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.05, 1000);
+var camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.01, 1000);
 var camPivot = new THREE.Object3D();
 scene.add(camPivot);
 camPivot.add(camera);
@@ -1020,11 +1020,8 @@ function doShoot() {
   if(!GS.running||GS.playerDead||GS.reloading)return;
   var w=WEAPONS[curWeapon],pa=playerAmmo[curWeapon];
   if(pa.cur<=0){startReload();return;}
-  // Minigun spinup
-  if(w.spinup){
-    spinupTimer=Math.min(w.spinup,spinupTimer+0.055);
-    if(spinupTimer<w.spinup*.88)return;
-  }
+  // Minigun spinup — timer tryShoot'ta artıyor, burada sadece eşik kontrolü
+  if(w.spinup&&spinupTimer<w.spinup*.75)return;
   pa.cur--;
   document.getElementById('abig').textContent=pa.cur;
   document.getElementById('wa'+curWeapon).textContent=pa.cur;
@@ -1068,7 +1065,10 @@ function doShoot() {
 var shootCooldown=0;
 function tryShoot(dt) {
   var w=WEAPONS[curWeapon];
-  if(w.spinup&&!mouseDown) { spinupTimer=Math.max(0,spinupTimer-dt*.8); return; }
+  if(w.spinup){
+    if(mouseDown){spinupTimer=Math.min(w.spinup,spinupTimer+dt);}
+    else{spinupTimer=Math.max(0,spinupTimer-dt*1.2);return;}
+  }
   if(!mouseDown) return;
   shootCooldown-=dt;
   if(shootCooldown<=0){shootCooldown=w.rate;if(w.auto||w.spinup)doShoot();}
@@ -1329,7 +1329,7 @@ function buildPlayerWeapon(){
     cyl(.030,.030,.06,8,mYl, 0,  0,.72);              // roket ön koni
   }
 
-  g.position.set(.21,-.21,-.46); g.rotation.y=-.05; g.renderOrder=999;
+  g.position.set(.18,-.19,-.52); g.rotation.y=-.05; g.scale.set(.82,.82,.82); g.renderOrder=999;
   camera.add(g); pwm=g;
 }
 function updateWeaponAnim(dt){
