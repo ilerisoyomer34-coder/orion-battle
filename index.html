@@ -1246,44 +1246,90 @@ function drawMinimap(){
 var pwm=null;
 function buildPlayerWeapon(){
   if(pwm){camera.remove(pwm);pwm=null;}
-  var w=WEAPONS[curWeapon],g=new THREE.Group();
-  function m(c){return new THREE.MeshLambertMaterial({color:c,depthTest:false,depthWrite:false});}
-  var mDk=m(0x181818),mMt=m(0x4a4848),mWd=m(0x4a3018),mAc=m(curWeapon===3?0xff4400:0x3388cc);
-  function add(geo,mat,px,py,pz){var me=new THREE.Mesh(geo,mat);me.position.set(px,py,pz);me.renderOrder=999;g.add(me);}
-  if(w.type==='rocket'){
-    add(new THREE.CylinderGeometry(.055,.07,1.0,8),mMt,0,0,.2);
-    add(new THREE.CylinderGeometry(.055,.055,.25,8),m(0x333333),0,0,-.45);
-    add(new THREE.BoxGeometry(.22,.05,.8),mDk,0,-.06,0);
-  }else if(curWeapon===1||curWeapon===2){
-    add(new THREE.BoxGeometry(.075,.075,.52),mDk,0,0,.18);
-    add(new THREE.CylinderGeometry(.022,.022,.24,7),mMt,0,.006,.52);
-    add(new THREE.BoxGeometry(.044,.14,.065),mWd,0,-.11,.08);
-    add(new THREE.BoxGeometry(.075,.012,.32),mAc,0,-.036,.14);
+  var g=new THREE.Group();
+  function ml(c){return new THREE.MeshLambertMaterial({color:c,depthTest:false,depthWrite:false});}
+  var mDk=ml(0x181818),mMt=ml(0x4a4848),mWd=ml(0x5a3a18),mBrn=ml(0x3a2810),mRd=ml(0xcc2200),mYl=ml(0xb87333);
+  function box(bw,bh,bd,mt,px,py,pz,rx){var me=new THREE.Mesh(new THREE.BoxGeometry(bw,bh,bd),mt);me.position.set(px,py,pz);if(rx)me.rotation.x=rx;me.renderOrder=999;g.add(me);}
+  function cyl(rt,rb,h,seg,mt,px,py,pz){var me=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg),mt);me.position.set(px,py,pz);me.rotation.x=Math.PI/2;me.renderOrder=999;g.add(me);}
+
+  if(curWeapon===0){
+    // M1 GARAND — tüfek: uzun ahşap gövde + ince namluu + şarjör
+    box(.068,.065,.62,mWd,  0,-.005,.18);         // ahşap gövde
+    box(.052,.038,.64,mDk,  0, .018,.18);          // üst metal ray
+    cyl(.011,.011,.55,8,mMt, 0, .040,.40);         // ince namluu
+    box(.040,.012,.30,mYl,   0,-.015,.18);          // en-bloc şarjör (sarı bronz)
+    box(.026,.075,.058,mWd,  0,-.080,.00);          // arka kavrama
+    box(.006,.026,.006,mMt,  0, .042,.58);          // ön nişangah
+    box(.010,.010,.012,mMt,  0, .032,.04);          // arka nişangah çatısı
+
+  }else if(curWeapon===1){
+    // M97 SHOTGUN — pompalı: geniş namluu, pompa kolu
+    box(.080,.075,.56,mWd,  0,-.005,.14);
+    box(.070,.042,.58,mDk,  0, .022,.14);
+    cyl(.022,.022,.52,8,mMt, 0, .042,.34);          // geniş namluu
+    cyl(.018,.018,.16,8,mMt, 0, .005,.30);          // pompa halkası
+    box(.065,.020,.24,mMt,   0,-.028,.24);           // pompa gövdesi
+    box(.030,.088,.058,mWd,  0,-.090,.00);           // dipçik kavrama
+    box(.006,.024,.006,mMt,  0, .050,.48);
+
+  }else if(curWeapon===2){
+    // AUTO SHOTGUN — daha kısa, kutu şarjör, metal gövde
+    box(.080,.078,.48,mDk,  0,-.002,.12);
+    box(.070,.042,.50,mDk,  0, .022,.12);
+    cyl(.021,.021,.44,8,mMt, 0, .042,.28);
+    box(.052,.105,.060,mDk,  0,-.120,.10);           // kutu şarjör (büyük)
+    box(.006,.022,.006,mMt,  0, .050,.36);
+    box(.032,.024,.14,mMt,   0, .042,.12);           // teleskopik ön kısım
+
   }else if(curWeapon===3){
-    add(new THREE.BoxGeometry(.085,.085,.48),mDk,0,0,.20);
-    add(new THREE.CylinderGeometry(.015,.015,.60,7),mMt,0,.006,.62);
-    add(new THREE.BoxGeometry(.055,.16,.07),mMt,0,-.12,.14);
-    add(new THREE.BoxGeometry(.085,.012,.35),mAc,0,-.040,.16);
-    add(new THREE.CylinderGeometry(.042,.042,.12,8),mMt,0,.006,.36);
+    // M134 MINIGUN — 5 namluu küme, büyük döner mekanizma
+    box(.095,.095,.50,mDk,   0, 0,.18);              // ana gövde
+    box(.048,.175,.070,mMt,  0,-.13,.14);            // motor/güç kutusu
+    box(.032,.090,.050,mRd,  0,-.14,.18);            // ısı göstergesi kırmızı
+    cyl(.011,.011,.56,6,mMt, 0,  .044,.38);          // merkez namluu
+    cyl(.010,.010,.52,6,mMt, .030, .030,.37);
+    cyl(.010,.010,.52,6,mMt,-.030, .030,.37);
+    cyl(.010,.010,.52,6,mMt, .030,-.030,.37);
+    cyl(.010,.010,.52,6,mMt,-.030,-.030,.37);
+    cyl(.050,.050,.07,8,mMt, 0,   .000,.58);         // ön namluu halkası
+    cyl(.050,.050,.05,8,mMt, 0,   .000,.10);         // arka namluu halkası
+
   }else if(curWeapon===4){
-    add(new THREE.BoxGeometry(.055,.065,.28),mDk,0,0,.05);
-    add(new THREE.CylinderGeometry(.011,.011,.18,6),mMt,0,.005,.26);
-    add(new THREE.BoxGeometry(.038,.11,.055),mDk,0,-.095,.02);
+    // M1911 PISTOL — kompakt, üstte slayıt, kısa namluu
+    box(.054,.075,.26,mDk,  0, 0,.04);               // gövde
+    box(.048,.030,.24,mMt,  0, .028,.04);             // slayıt
+    cyl(.011,.011,.18,7,mMt, 0,  .028,.20);           // kısa namluu
+    box(.038,.112,.054,mDk,  0,-.100,.02);            // şarjör
+    box(.028,.078,.058,mDk,  0,-.038,-.10);           // grip arka
+    box(.006,.016,.006,mMt,  0, .050,.22);            // ön nişangah
+    box(.012,.010,.010,mMt,  0, .042,.01);            // arka nişangah çatısı
+
   }else if(curWeapon===5){
-    add(new THREE.BoxGeometry(.055,.065,.68),mWd,0,-.01,.22);
-    add(new THREE.CylinderGeometry(.010,.010,.55,6),mMt,0,.007,.65);
-    add(new THREE.BoxGeometry(.020,.018,.25),mMt,0,.050,.28);
-    add(new THREE.BoxGeometry(.055,.012,.38),mAc,0,-.032,.24);
+    // SPRINGFIELD SNIPER — çok uzun, dürbün, ağır ahşap dipçik
+    box(.058,.068,.76,mWd,  0,-.008,.24);             // uzun ahşap gövde
+    box(.046,.036,.78,mDk,  0, .022,.24);             // üst metal ray
+    cyl(.009,.009,.68,7,mMt, 0,  .040,.46);           // uzun ince namluu
+    // Dürbün
+    box(.028,.028,.20,mDk,  0, .068,.24);
+    cyl(.016,.016,.04,8,mMt, 0,  .068,.15);
+    cyl(.016,.016,.04,8,mMt, 0,  .068,.34);
+    box(.007,.036,.038,mMt,  0, .052,.24);            // dürbün ayağı
+    box(.030,.088,.062,mWd,  0,-.082,.00);            // dipçik arka
+    box(.006,.024,.006,mMt,  0, .040,.68);            // ön nişangah
+
   }else{
-    add(new THREE.BoxGeometry(.068,.075,.44),mDk,0,0,.15);
-    add(new THREE.CylinderGeometry(.013,.013,.38,7),mMt,0,.006,.48);
-    add(new THREE.BoxGeometry(.044,.14,.065),mMt,0,-.11,.10);
-    add(new THREE.BoxGeometry(.054,.072,.065),mDk,0,-.12,.22);
-    add(new THREE.BoxGeometry(.068,.065,.18),mDk,0,-.005,-.15);
-    add(new THREE.BoxGeometry(.070,.012,.30),mAc,0,-.032,.12);
-    add(new THREE.BoxGeometry(.020,.018,.22),mMt,0,.050,.14);
+    // M1A1 BAZOOKA — omuz tüpü, roket, tetik grubu
+    cyl(.046,.046,.98,10,mMt, 0, 0,.16);              // ana tüp
+    cyl(.052,.052,.055,10,mMt,0, 0,-.28);             // arka ağız
+    cyl(.052,.052,.055,10,mMt,0, 0,.64);              // ön ağız
+    box(.175,.038,.68,mDk,   0,-.062,.12);            // omuz desteği
+    box(.024,.088,.054,mDk,  0,-.100,.12);            // kavrama
+    box(.022,.018,.028,mRd,  0,-.100,.22);            // tetik kırmızı
+    cyl(.036,.020,.10,8,mRd, 0,  0,.66);              // roket başlığı (kırmızı)
+    cyl(.030,.030,.06,8,mYl, 0,  0,.72);              // roket ön koni
   }
-  g.position.set(.21,-.21,-.48); g.rotation.y=-.07; g.renderOrder=999;
+
+  g.position.set(.21,-.21,-.46); g.rotation.y=-.05; g.renderOrder=999;
   camera.add(g); pwm=g;
 }
 function updateWeaponAnim(dt){
@@ -1304,9 +1350,17 @@ document.addEventListener('keydown',function(e){
   if(e.code==='Space'&&onGround&&!GS.inVehicle&&!GS.playerDead)velY=8;
   if(e.code==='KeyF'){if(GS.inVehicle)exitVehicle();else if(GS.nearVehicle)enterVehicle(GS.nearVehicle);}
   if(e.code==='Escape'){if(GS.inVehicle)exitVehicle();if(GS.zoomed)setZoom(false);}
-  for(var i=0;i<7;i++){if(e.code==='Digit'+(i+1))selectWeapon(i);}
+  for(var i=0;i<7;i++){
+    if(e.code==='Digit'+(i+1)||e.code==='Numpad'+(i+1))selectWeapon(i);
+  }
 });
 document.addEventListener('keyup',function(e){keys[e.code]=false;});
+document.addEventListener('wheel',function(e){
+  if(!GS.running||!document.pointerLockElement)return;
+  var dir=e.deltaY>0?1:-1;
+  var next=(curWeapon+dir+WEAPONS.length)%WEAPONS.length;
+  selectWeapon(next);
+},{passive:true});
 document.addEventListener('mousemove',function(e){
   if(!document.pointerLockElement)return;
   yaw-=e.movementX*.0013; pitch-=e.movementY*.0013;
