@@ -61,8 +61,7 @@ body{background:#000;overflow:hidden;font-family:'Courier New',monospace;}
 @keyframes kfo{0%{opacity:1}75%{opacity:1}100%{opacity:0}}
 #ntxt{position:absolute;top:48%;left:50%;transform:translate(-50%,-50%);font-size:22px;font-weight:700;color:#fff;text-shadow:0 0 18px #fa0,0 2px 4px #000;letter-spacing:.18em;opacity:0;transition:opacity .4s;pointer-events:none;text-align:center;}
 #zoom{position:fixed;inset:0;display:none;pointer-events:none;}
-#zoom::before{content:'';position:absolute;inset:0;background:rgba(0,0,0,.82);}
-#zc{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:340px;height:340px;border-radius:50%;border:2px solid rgba(200,200,200,.7);box-shadow:0 0 0 9999px rgba(0,0,0,.82);background:transparent;z-index:1;overflow:hidden;}
+#zc{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:340px;height:340px;border-radius:50%;border:2px solid rgba(200,200,200,.75);box-shadow:0 0 0 9999px rgba(0,0,0,.88);background:transparent;z-index:1;overflow:hidden;}
 #zh{position:absolute;top:50%;left:0;right:0;height:1px;background:rgba(220,30,30,.85);transform:translateY(-50%);}
 #zv{position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(220,30,30,.85);transform:translateX(-50%);}
 #zdot{position:absolute;top:50%;left:50%;width:6px;height:6px;border-radius:50%;background:rgba(220,30,30,.9);transform:translate(-50%,-50%);}
@@ -429,8 +428,8 @@ function selectWeapon(i) {
 // ── Game State ───────────────────────────
 var GS={
   running:false, outcome:null,
-  shield:100,health:100,armor:80,
-  maxShield:100,maxHealth:100,maxArmor:80,
+  shield:250,health:300,armor:200,
+  maxShield:250,maxHealth:300,maxArmor:200,
   shieldRegen:0,
   reloading:false,reloadTimer:0,reloadMax:0,
   zoomed:false,
