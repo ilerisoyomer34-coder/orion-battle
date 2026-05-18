@@ -112,6 +112,11 @@ body{background:#000;overflow:hidden;font-family:'Courier New',monospace;}
     <div class="sr"><span class="stn sv">VORN</span><span class="snum sv" id="sv">0</span></div>
   </div>
   <div id="unitbar" style="position:absolute;top:18px;left:50%;transform:translateX(-50%);display:flex;gap:18px;align-items:center;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.12);padding:5px 16px;border-radius:4px;font-family:'JetBrains Mono',monospace;">
+    <div style="display:flex;align-items:center;gap:5px;">
+      <span style="font-size:8px;letter-spacing:.1em;color:#fa0;">SEVİYE</span>
+      <span style="font-size:13px;font-weight:900;color:#fa0;" id="dlvl">1</span>
+    </div>
+    <span style="color:#444;font-size:10px;">|</span>
     <div style="display:flex;align-items:center;gap:6px;">
       <span style="font-size:8px;letter-spacing:.12em;color:#4ae3ff;">UOC ASKERLERİ</span>
       <span style="font-size:13px;font-weight:700;color:#4ae3ff;" id="uunit">12/12</span>
@@ -758,10 +763,14 @@ function updateVehicleAI(v,dt) {
   }
 }
 
+// ── Difficulty ───────────────────────────
+function getDifficulty(){return Math.min(10,1+Math.floor(GS.kills/12));}
+function diffMult(){return getDifficulty();}  // 1..10
+
 // ── Soldiers ─────────────────────────────
 var soldiers=[];
 var MAX_SOLDIERS=12;
-var TOTAL_VORN=40; // toplam respawn hakkı
+var TOTAL_VORN=40;
 var vornRespawnsLeft=TOTAL_VORN;
 function spawnSoldiers() {
   ['uoc','vorn'].forEach(function(team) {
@@ -772,13 +781,12 @@ function spawnSoldiers() {
       mesh.position.set(x,TH(x,z),z);
       mesh.rotation.y=team==='uoc'?.2:Math.PI+.2;
       scene.add(mesh);
-      var pers=['aggressive','defensive','cautious'][Math.floor(Math.random()*3)];
       soldiers.push({
         mesh:mesh,team:team,hp:100,maxHp:100,alive:true,
-        state:'advance',personality:pers,
+        state:'advance',personality:'aggressive',
         target:null,shootTimer:0,respawnTimer:0,
-        stateTimer:1+Math.random()*2,coverTarget:null,
-        speed:2.0+Math.random()*.8,prone:false,
+        stateTimer:.5+Math.random(),coverTarget:null,
+        speed:2.2+Math.random()*.6,prone:false,
         guardAngle:Math.random()*Math.PI*2
       });
     }
@@ -804,18 +812,13 @@ function findNearestCover(s) {
 }
 function decideBehavior(s) {
   var ne=findNearestEnemy(s),enemy=ne.enemy,dist=ne.dist;
+  var d=getDifficulty();
+  var sightRange=45+d*6; // zorluk arttıkça daha uzaktan fark eder
+  if(!enemy||dist>sightRange){s.state=Math.random()<.15?'guard':'advance';return;}
+  // Her iki taraf da agresif — düşük HP'de prone, yoksa hep attack
   var hpr=s.hp/s.maxHp;
-  if(!enemy||dist>60){s.state=Math.random()<.35?'guard':'advance';return;}
-  if(hpr<.25){s.state=Math.random()<.6?'takeCover':'prone';return;}
-  if(dist<12){
-    if(s.personality==='aggressive')s.state='attack';
-    else if(s.personality==='defensive')s.state=Math.random()<.5?'takeCover':'prone';
-    else s.state=Math.random()<.4?'prone':'attack';
-  } else if(dist<30){
-    s.state=Math.random()<.4?'takeCover':'attack';
-  } else {
-    s.state=s.personality==='cautious'?'takeCover':'advance';
-  }
+  if(hpr<.18&&Math.random()<.4){s.state='prone';}
+  else{s.state='attack';}
 }
 function animLegs(s,phase,amp) {
   var ud=s.mesh.userData;
@@ -824,14 +827,17 @@ function animLegs(s,phase,amp) {
   if(ud.ls)ud.ls.rotation.x=Math.sin(phase)*amp;
   if(ud.rs)ud.rs.rotation.x=-Math.sin(phase)*amp;
 }
-function soldierShoot(s,targetPos) {
+function soldierShoot(s,targetPos,accScale) {
+  accScale=accScale||1;
   var from=s.mesh.position.clone().add(new THREE.Vector3(0,s.prone?.3:1.3,0));
   spawnTracer(from,targetPos,s.team==='uoc');
   var dist=from.distanceTo(targetPos);
-  var acc=s.prone?.85:.6;
-  if(Math.random()<acc*(1-Math.min(1,dist/35))) {
-    if(s.team==='vorn'&&!GS.playerDead&&targetPos.distanceTo(camPivot.position)<2)damagePlayer(12+Math.random()*10);
-    if(s.target&&s.target.alive){s.target.hp-=10+Math.random()*14;if(s.target.hp<=0)killSoldier(s.target,s.team);}
+  var acc=(s.prone?.88:.65)*accScale;
+  var d=getDifficulty();
+  var dmgBase=10+d*3; // zorlukla hasar artar
+  if(Math.random()<acc*(1-Math.min(1,dist/40))) {
+    if(!GS.playerDead&&targetPos.distanceTo(camPivot.position)<2.2)damagePlayer(dmgBase+Math.random()*8);
+    if(s.target&&s.target.alive){s.target.hp-=dmgBase+Math.random()*12;if(s.target.hp<=0)killSoldier(s.target,s.team);}
   }
 }
 function updateSoldiers(dt) {
@@ -839,12 +845,16 @@ function updateSoldiers(dt) {
   soldiers.forEach(function(s) {
     if(!s.alive){s.respawnTimer-=dt;if(s.respawnTimer<=0)respawnSoldier(s);return;}
     var mesh=s.mesh;
+    var d=getDifficulty();
+    var speedScale=1+d*.18;       // hız: seviye 1=1x, 10=2.8x
+    var accuracyScale=1-d*.05;    // isabet aralığı küçülür (daha isabetli)
+    var shootRateScale=1-d*.06;   // ateş daha hızlı
     s.stateTimer-=dt;
-    if(s.stateTimer<=0){decideBehavior(s);s.stateTimer=1.5+Math.random()*2.5;}
-    // VORN oyuncuyu görürse anında saldır
-    if(s.team==='vorn'&&!GS.playerDead&&mesh.position.distanceTo(camPivot.position)<50){
-      s.state='attack';s.stateTimer=2;
-    }
+    if(s.stateTimer<=0){decideBehavior(s);s.stateTimer=Math.max(.4,1.2-d*.08)+Math.random()*.6;}
+    // Her iki taraf: oyuncuya yakınlaşınca saldır
+    var pDist=mesh.position.distanceTo(camPivot.position);
+    var sightR=45+d*6;
+    if(!GS.playerDead&&pDist<sightR){s.state='attack';s.stateTimer=1;}
     var ne=findNearestEnemy(s);var enemy=ne.enemy,dist=ne.dist;
     s.target=enemy;
     // State machine (no const inside switch — use var outside)
@@ -875,18 +885,19 @@ function updateSoldiers(dt) {
         dirAtk=atkTarget.clone().sub(mesh.position); dirAtk.y=0;
         var atkDist=attackPlayer?playerDist:dist;
         mesh.rotation.y=Math.atan2(dirAtk.x,dirAtk.z);
-        if(atkDist>12){
+        if(atkDist>10){
           dirAtk.normalize();
-          mesh.position.addScaledVector(dirAtk,s.speed*1.5*dt);
+          mesh.position.addScaledVector(dirAtk,s.speed*speedScale*1.6*dt);
           mesh.position.y+=(TH(mesh.position.x,mesh.position.z)-mesh.position.y)*Math.min(1,dt*10);
         }
         s.mesh.userData.walkPhase+=dt*5;
         animLegs(s,s.mesh.userData.walkPhase,.3);
         s.shootTimer-=dt;
-        var shootRange=attackPlayer?55:30;
+        var shootRange=attackPlayer?(55+d*5):(30+d*4);
         if(s.shootTimer<=0&&atkDist<shootRange){
-          s.shootTimer=attackPlayer?(.3+Math.random()*.4):(.5+Math.random()*.7);
-          soldierShoot(s,atkTarget.clone().add(new THREE.Vector3(0,1,0)));
+          var baseRate=attackPlayer?(.28+Math.random()*.3):(.45+Math.random()*.5);
+          s.shootTimer=Math.max(.15,baseRate*shootRateScale);
+          soldierShoot(s,atkTarget.clone().add(new THREE.Vector3(0,1,0)),accuracyScale);
         }
       }
     } else if(s.state==='takeCover') {
@@ -942,7 +953,8 @@ function killSoldier(s,killerTeam) {
   spawnExplosion(s.mesh.position.clone().add(new THREE.Vector3(0,.4,0)));
   if(killerTeam==='uoc'){GS.score.uoc++;GS.kills++;}else GS.score.vorn++;
   addKF(killerTeam,s.team.toUpperCase());
-  s.respawnTimer=7+Math.random()*5;
+  var d=getDifficulty();
+  s.respawnTimer=Math.max(2,8-d*.5)+Math.random()*3;
   setTimeout(function(){s.mesh.visible=false;},1500);
   s.coverTarget=null; s.prone=false;
 }
@@ -951,7 +963,8 @@ function respawnSoldier(s) {
     if(vornRespawnsLeft<=0){s.respawnTimer=99999;return;} // artık gelemiyor
     vornRespawnsLeft--;
   }
-  s.hp=s.maxHp; s.alive=true; s.state='advance';
+  var d=getDifficulty();
+  s.maxHp=100+d*15; s.hp=s.maxHp; s.alive=true; s.state='attack';
   s.mesh.visible=true; s.mesh.rotation.x=0; s.mesh.rotation.z=0;
   var bx=s.team==='uoc'?-78:78;
   var x=bx+(Math.random()-.5)*20,z=(Math.random()-.5)*20;
@@ -1189,8 +1202,10 @@ function updateWaves(dt){
   var aliveVorn=vehicles.filter(function(v){return v.alive&&v.team==='vorn';}).length;
   waveTimer-=dt;
   if(waveTimer<=0){
-    waveTimer=30+Math.random()*20;
-    if(aliveVorn<4)spawnVornVehicle();
+    var d=getDifficulty();
+    waveTimer=Math.max(12,32-d*2)+Math.random()*10;
+    var maxV=Math.min(7,2+Math.floor(d/2)); // zorlukla daha fazla araç
+    if(aliveVorn<maxV)spawnVornVehicle();
   }
 }
 function separateVehicles() {
@@ -1237,6 +1252,7 @@ function updateScore(){
   var va=soldiers.filter(function(s){return s.team==='vorn'&&s.alive;}).length;
   document.getElementById('uunit').textContent=ua+'/'+MAX_SOLDIERS;
   document.getElementById('vunit').textContent=va+'/'+vornRespawnsLeft;
+  document.getElementById('dlvl').textContent=getDifficulty();
   // Zafer kontrolü
   if(!GS.outcome&&vornRespawnsLeft<=0&&va===0){
     var alive=vehicles.filter(function(v){return v.alive&&v.team==='vorn';}).length;
