@@ -61,8 +61,16 @@ body{background:#000;overflow:hidden;font-family:'Courier New',monospace;}
 @keyframes kfo{0%{opacity:1}75%{opacity:1}100%{opacity:0}}
 #ntxt{position:absolute;top:48%;left:50%;transform:translate(-50%,-50%);font-size:22px;font-weight:700;color:#fff;text-shadow:0 0 18px #fa0,0 2px 4px #000;letter-spacing:.18em;opacity:0;transition:opacity .4s;pointer-events:none;text-align:center;}
 #zoom{position:fixed;inset:0;display:none;pointer-events:none;}
-#zoom::before{content:'';position:absolute;inset:0;background:rgba(0,0,0,.72);}
-#zc{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:320px;height:320px;border-radius:50%;border:2px solid rgba(255,255,255,.55);box-shadow:0 0 0 9999px rgba(0,0,0,.72);background:transparent;z-index:1;}
+#zoom::before{content:'';position:absolute;inset:0;background:rgba(0,0,0,.82);}
+#zc{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:340px;height:340px;border-radius:50%;border:2px solid rgba(200,200,200,.7);box-shadow:0 0 0 9999px rgba(0,0,0,.82);background:transparent;z-index:1;overflow:hidden;}
+#zh{position:absolute;top:50%;left:0;right:0;height:1px;background:rgba(220,30,30,.85);transform:translateY(-50%);}
+#zv{position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(220,30,30,.85);transform:translateX(-50%);}
+#zdot{position:absolute;top:50%;left:50%;width:6px;height:6px;border-radius:50%;background:rgba(220,30,30,.9);transform:translate(-50%,-50%);}
+#zmil{position:absolute;inset:0;}
+.zmilh{position:absolute;height:1px;background:rgba(200,200,200,.4);top:50%;}
+.zmilv{position:absolute;width:1px;background:rgba(200,200,200,.4);left:50%;}
+#zfov{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);color:rgba(200,200,200,.7);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;z-index:2;}
+#ztick{position:absolute;top:8px;left:50%;transform:translateX(-50%);color:rgba(200,200,200,.55);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;z-index:2;}
 #rld{position:absolute;bottom:92px;left:50%;transform:translateX(-50%);display:none;flex-direction:column;align-items:center;gap:4px;}
 #rldlbl{color:#fa0;font-size:10px;letter-spacing:.2em;}
 #rldbg{width:110px;height:4px;background:rgba(255,255,255,.2);border-radius:2px;overflow:hidden;}
@@ -120,7 +128,19 @@ body{background:#000;overflow:hidden;font-family:'Courier New',monospace;}
   <div id="rld"><div id="rldlbl">YENİDEN DOLUYOR</div><div id="rldbg"><div id="rldbar"></div></div></div>
   <div id="vprompt">[F] ARACA BİN</div>
 </div>
-<div id="zoom"><div id="zc"></div></div>
+<div id="zoom"><div id="zc">
+  <div id="zh"></div><div id="zv"></div><div id="zdot"></div>
+  <div id="zmil">
+    <div class="zmilh" style="width:30px;left:calc(50% - 100px);"></div>
+    <div class="zmilh" style="width:30px;left:calc(50% + 70px);"></div>
+    <div class="zmilh" style="width:20px;left:calc(50% - 140px);"></div>
+    <div class="zmilh" style="width:20px;left:calc(50% + 120px);"></div>
+    <div class="zmilv" style="height:30px;top:calc(50% + 70px);"></div>
+    <div class="zmilv" style="height:30px;top:calc(50% - 100px);"></div>
+  </div>
+  <div id="zfov">10x</div>
+  <div id="ztick">SPRINGFIELD M1903</div>
+</div></div>
 <div id="hitfl"></div>
 <div id="outcome"><div id="otitle"></div><div id="osub"></div></div>
 <div id="lock">
@@ -742,6 +762,8 @@ function updateVehicleAI(v,dt) {
 // ── Soldiers ─────────────────────────────
 var soldiers=[];
 var MAX_SOLDIERS=12;
+var TOTAL_VORN=40; // toplam respawn hakkı
+var vornRespawnsLeft=TOTAL_VORN;
 function spawnSoldiers() {
   ['uoc','vorn'].forEach(function(team) {
     var bx=team==='uoc'?-78:78;
@@ -820,6 +842,10 @@ function updateSoldiers(dt) {
     var mesh=s.mesh;
     s.stateTimer-=dt;
     if(s.stateTimer<=0){decideBehavior(s);s.stateTimer=1.5+Math.random()*2.5;}
+    // VORN oyuncuyu görürse anında saldır
+    if(s.team==='vorn'&&!GS.playerDead&&mesh.position.distanceTo(camPivot.position)<50){
+      s.state='attack';s.stateTimer=2;
+    }
     var ne=findNearestEnemy(s);var enemy=ne.enemy,dist=ne.dist;
     s.target=enemy;
     // State machine (no const inside switch — use var outside)
@@ -841,11 +867,16 @@ function updateSoldiers(dt) {
       animLegs(s,s.mesh.userData.walkPhase,.45);
       if(enemy&&dist<18)s.state='attack';
     } else if(s.state==='attack') {
-      if(!enemy){s.state='advance';}else{
-        s.prone=false; mesh.rotation.x=0;
-        dirAtk=enemy.mesh.position.clone().sub(mesh.position); dirAtk.y=0;
+      s.prone=false; mesh.rotation.x=0;
+      // VORN askerleri oyuncuyu öncelikli hedef alır
+      var playerDist=mesh.position.distanceTo(camPivot.position);
+      var attackPlayer=s.team==='vorn'&&!GS.playerDead&&playerDist<50;
+      var atkTarget=attackPlayer?camPivot.position.clone():((enemy&&dist<50)?enemy.mesh.position.clone():null);
+      if(!atkTarget){s.state='advance';}else{
+        dirAtk=atkTarget.clone().sub(mesh.position); dirAtk.y=0;
+        var atkDist=attackPlayer?playerDist:dist;
         mesh.rotation.y=Math.atan2(dirAtk.x,dirAtk.z);
-        if(dist>14){
+        if(atkDist>12){
           dirAtk.normalize();
           mesh.position.addScaledVector(dirAtk,s.speed*1.5*dt);
           mesh.position.y+=(TH(mesh.position.x,mesh.position.z)-mesh.position.y)*Math.min(1,dt*10);
@@ -853,7 +884,11 @@ function updateSoldiers(dt) {
         s.mesh.userData.walkPhase+=dt*5;
         animLegs(s,s.mesh.userData.walkPhase,.3);
         s.shootTimer-=dt;
-        if(s.shootTimer<=0&&dist<30){s.shootTimer=.5+Math.random()*.7;soldierShoot(s,enemy.mesh.position.clone().add(new THREE.Vector3(0,1,0)));}
+        var shootRange=attackPlayer?55:30;
+        if(s.shootTimer<=0&&atkDist<shootRange){
+          s.shootTimer=attackPlayer?(.3+Math.random()*.4):(.5+Math.random()*.7);
+          soldierShoot(s,atkTarget.clone().add(new THREE.Vector3(0,1,0)));
+        }
       }
     } else if(s.state==='takeCover') {
       s.prone=false; mesh.rotation.x=0;
@@ -913,6 +948,10 @@ function killSoldier(s,killerTeam) {
   s.coverTarget=null; s.prone=false;
 }
 function respawnSoldier(s) {
+  if(s.team==='vorn'){
+    if(vornRespawnsLeft<=0){s.respawnTimer=99999;return;} // artık gelemiyor
+    vornRespawnsLeft--;
+  }
   s.hp=s.maxHp; s.alive=true; s.state='advance';
   s.mesh.visible=true; s.mesh.rotation.x=0; s.mesh.rotation.z=0;
   var bx=s.team==='uoc'?-78:78;
@@ -932,8 +971,8 @@ function updateObjectives(dt) {
   });
   updateObjVisuals();
   if(!GS.outcome){
-    if(OBJS.every(function(o){return o.owner==='uoc';})){GS.outcome='win';showOutcome('win');}
-    if(OBJS.every(function(o){return o.owner==='vorn';})){GS.outcome='lose';showOutcome('lose');}
+    if(OBJS.every(function(o){return o.owner==='uoc';})){showOutcome('win');}
+    if(OBJS.every(function(o){return o.owner==='vorn';})){showOutcome('lose');}
   }
 }
 
@@ -956,6 +995,12 @@ function movePlayer(dt) {
   if(camPivot.position.y<=gh){camPivot.position.y=gh;velY=0;onGround=true;}else onGround=false;
   camPivot.position.x=Math.max(-280,Math.min(280,camPivot.position.x));
   camPivot.position.z=Math.max(-280,Math.min(280,camPivot.position.z));
+  // Siper çarpışması — cover noktaları etrafında geçilmez alan
+  coverPoints.forEach(function(cp){
+    var cdx=camPivot.position.x-cp.x, cdz=camPivot.position.z-cp.z;
+    var cd=Math.sqrt(cdx*cdx+cdz*cdz);
+    if(cd<1.4&&cd>0.01){camPivot.position.x=cp.x+cdx/cd*1.4;camPivot.position.z=cp.z+cdz/cd*1.4;}
+  });
 }
 var vehShootCooldown=0;
 function doVehicleShoot() {
@@ -1042,7 +1087,7 @@ function doShoot() {
     soldiers.forEach(function(s){if(s.alive)meshList.push(s.mesh);});
     vehicles.forEach(function(v){if(v.alive&&v!==GS.inVehicle)meshList.push(v.mesh);});
     var hits=raycast.intersectObjects(meshList,true);
-    var to=from.clone().addScaledVector(dir,120);
+    var to=from.clone().addScaledVector(dir,WEAPONS[curWeapon].id==='sniper'?600:120);
     if(hits.length>0){
       var hp=hits[0].point; to=hp.clone();
       var hitObj=hits[0].object;
@@ -1128,6 +1173,25 @@ function updateVitals() {
   document.getElementById('hnum').textContent=Math.ceil(GS.health);
   document.getElementById('anum').textContent=Math.ceil(GS.armor);
 }
+// ── Vehicle Wave Spawner ──────────────────
+var waveTimer=35;
+function spawnVornVehicle(){
+  if(vornRespawnsLeft<=0)return;
+  var isTank=Math.random()<0.5;
+  var mesh=isTank?buildTank('vorn'):buildJeep('vorn');
+  var x=72+(Math.random()-.5)*18, z=(Math.random()-.5)*30;
+  mesh.position.set(x,TH(x,z)+(isTank?.55:.38),z);
+  scene.add(mesh);
+  vehicles.push({mesh:mesh,team:'vorn',alive:true,hp:isTank?600:220,maxHp:isTank?600:220,shootTimer:0});
+}
+function updateWaves(dt){
+  var aliveVorn=vehicles.filter(function(v){return v.alive&&v.team==='vorn';}).length;
+  waveTimer-=dt;
+  if(waveTimer<=0){
+    waveTimer=30+Math.random()*20;
+    if(aliveVorn<4)spawnVornVehicle();
+  }
+}
 function separateVehicles() {
   for(var i=0;i<vehicles.length;i++){
     var a=vehicles[i]; if(!a.alive)continue;
@@ -1171,7 +1235,12 @@ function updateScore(){
   var ua=soldiers.filter(function(s){return s.team==='uoc'&&s.alive;}).length;
   var va=soldiers.filter(function(s){return s.team==='vorn'&&s.alive;}).length;
   document.getElementById('uunit').textContent=ua+'/'+MAX_SOLDIERS;
-  document.getElementById('vunit').textContent=va+'/'+MAX_SOLDIERS;
+  document.getElementById('vunit').textContent=va+'/'+vornRespawnsLeft;
+  // Zafer kontrolü
+  if(!GS.outcome&&vornRespawnsLeft<=0&&va===0){
+    var alive=vehicles.filter(function(v){return v.alive&&v.team==='vorn';}).length;
+    if(alive===0)showOutcome('UOC ZAFERİ','Tüm düşman kuvvetleri yok edildi!','#4ae3ff');
+  }
 }
 function addKF(killer,victim){
   var kf=document.getElementById('kfeed');
@@ -1184,18 +1253,29 @@ function addKF(killer,victim){
 var notifT=0;
 function showNotif(msg){var el=document.getElementById('ntxt');el.textContent=msg;el.style.opacity='1';notifT=3.5;}
 function tickNotif(dt){notifT-=dt;if(notifT<0)document.getElementById('ntxt').style.opacity='0';}
-function showOutcome(r){
+function showOutcome(r,sub,col){
+  GS.outcome=r;
   var el=document.getElementById('outcome'); el.style.display='flex';
   var t=document.getElementById('otitle'),s=document.getElementById('osub');
   if(r==='win'){t.textContent='ZAFER';t.style.color='#4ae3ff';el.style.background='rgba(0,30,60,.85)';s.textContent='TÜM NOKTALAR ELE GEÇİRİLDİ';}
-  else{t.textContent='MAĞLUP';t.style.color='#ff4444';el.style.background='rgba(50,0,0,.85)';s.textContent='VORN KUVVETLERİ SEKTÖRÜ ELE GEÇİRDİ';}
+  else if(r==='lose'){t.textContent='MAĞLUP';t.style.color='#ff4444';el.style.background='rgba(50,0,0,.85)';s.textContent='VORN KUVVETLERİ SEKTÖRÜ ELE GEÇİRDİ';}
+  else{t.textContent=r;t.style.color=col||'#4ae3ff';el.style.background='rgba(0,30,60,.85)';s.textContent=sub||'';}
 }
 
 // ── Zoom ──────────────────────────────────
+var sniperFov=10;
 function setZoom(on){
   GS.zoomed=on;
   document.getElementById('zoom').style.display=on?'block':'none';
-  camera.fov=on?22:70; camera.updateProjectionMatrix();
+  if(on){camera.fov=sniperFov;}else{camera.fov=70;}
+  camera.updateProjectionMatrix();
+  if(on)document.getElementById('zfov').textContent=Math.round(70/sniperFov)+'x';
+}
+function adjustSniperZoom(delta){
+  if(!GS.zoomed)return;
+  sniperFov=Math.max(4,Math.min(22,sniperFov+delta));
+  camera.fov=sniperFov; camera.updateProjectionMatrix();
+  document.getElementById('zfov').textContent=Math.round(70/sniperFov)+'x';
 }
 
 // ── Near vehicle ─────────────────────────
@@ -1358,6 +1438,7 @@ document.addEventListener('keydown',function(e){
 document.addEventListener('keyup',function(e){keys[e.code]=false;});
 document.addEventListener('wheel',function(e){
   if(!GS.running||!document.pointerLockElement)return;
+  if(GS.zoomed){adjustSniperZoom(e.deltaY>0?2:-2);return;}
   var dir=e.deltaY>0?1:-1;
   var next=(curWeapon+dir+WEAPONS.length)%WEAPONS.length;
   selectWeapon(next);
@@ -1421,6 +1502,7 @@ function loop(){
     updateSoldiers(dt);
     vehicles.forEach(function(v){updateVehicleAI(v,dt);});
     separateVehicles();
+    updateWaves(dt);
     updateObjectives(dt);
     updateShieldRegen(dt);
     tickReload(dt); tickNotif(dt);
