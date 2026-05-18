@@ -395,7 +395,7 @@ var WEAPONS=[
   {id:'autoshg',name:'AUTO SHOTGUN', ammo:12,  res:72,  rate:0.42, dmg:14,  vdmg:30,  spread:0.11,  auto:true,  type:'shotgun',pellets:6, reloadT:2.2},
   {id:'minigun',name:'M134 MINIGUN', ammo:200, res:600, rate:0.05, dmg:18,  vdmg:20,  spread:0.055, auto:true,  type:'bullet', pellets:1, reloadT:4.0, spinup:1.8},
   {id:'pistol', name:'M1911 PISTOL', ammo:7,   res:49,  rate:0.30, dmg:35,  vdmg:15,  spread:0.04,  auto:false, type:'bullet', pellets:1, reloadT:1.5},
-  {id:'sniper', name:'SPRINGFIELD',  ammo:5,   res:25,  rate:2.0,  dmg:120, vdmg:80,  spread:0.003, auto:false, type:'bullet', pellets:1, reloadT:3.0, zoom:true},
+  {id:'sniper', name:'SPRINGFIELD',  ammo:5,   res:9999,rate:2.0,  dmg:120, vdmg:80,  spread:0.003, auto:false, type:'bullet', pellets:1, reloadT:1.8, zoom:true},
   {id:'bazooka',name:'M1A1 BAZOOKA', ammo:1,   res:9,   rate:2.5,  dmg:300, vdmg:500, spread:0,     auto:false, type:'rocket', pellets:1, reloadT:2.5}
 ];
 var playerAmmo=WEAPONS.map(function(w){return {cur:w.ammo, res:w.res};});
@@ -452,13 +452,13 @@ function spawnRocket(fromPos,dir) {
   g.add(mesh);
   g.position.copy(fromPos);
   scene.add(g);
-  rockets.push({g:g,vel:dir.clone().multiplyScalar(26),alive:true,dist:0});
+  rockets.push({g:g,vel:dir.clone().multiplyScalar(38),alive:true,dist:0});
 }
 function updateRockets(dt) {
   for(var i=rockets.length-1;i>=0;i--) {
     var r=rockets[i];
     if(!r.alive){scene.remove(r.g);rockets.splice(i,1);continue;}
-    r.vel.y-=5*dt;
+    r.vel.y-=1.2*dt;
     r.g.position.addScaledVector(r.vel,dt);
     r.dist+=r.vel.length()*dt;
     var p=r.g.position;
@@ -1071,7 +1071,7 @@ function doShoot() {
   weaponRecoil=Math.min(1,weaponRecoil+(w.type==='rocket'?.95:w.type==='shotgun'?.55:.28));
   if(w.type==='rocket'){
     var rdir=new THREE.Vector3(); camera.getWorldDirection(rdir);
-    var rfrom=camera.getWorldPosition(new THREE.Vector3());
+    var rfrom=camera.getWorldPosition(new THREE.Vector3()).addScaledVector(rdir,1.2);
     spawnRocket(rfrom,rdir);
     if(pa.cur<=0&&pa.res>0)startReload();
     return;
@@ -1103,6 +1103,8 @@ function doShoot() {
     spawnTracer(from,to,true);
   }
   if(pa.cur<=0&&pa.res>0)startReload();
+  // Sniper: şarjör bittikten hemen sonra oto yenile
+  if(WEAPONS[curWeapon].id==='sniper'&&pa.cur<=0&&pa.res>0&&!GS.reloading)startReload();
 }
 
 var shootCooldown=0;
