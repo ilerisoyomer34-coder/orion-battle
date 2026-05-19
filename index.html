@@ -76,9 +76,12 @@ body{background:#000;overflow:hidden;font-family:'Courier New',monospace;}
 #rldbar{height:100%;background:#fa0;width:0%;}
 #vprompt{position:absolute;top:55%;left:50%;transform:translateX(-50%);color:#fa0;font-size:12px;letter-spacing:.2em;opacity:0;transition:opacity .3s;}
 #hitfl{position:fixed;inset:0;background:rgba(255,0,0,0);pointer-events:none;transition:background .1s;z-index:50;}
-#outcome{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;pointer-events:none;z-index:100;}
+#outcome{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:18px;pointer-events:all;z-index:100;}
 #otitle{font-size:64px;font-weight:900;letter-spacing:.22em;}
 #osub{font-size:15px;color:rgba(255,255,255,.6);letter-spacing:.14em;}
+#ocephe{display:none;margin-top:10px;padding:14px 38px;font-size:14px;font-weight:700;letter-spacing:.22em;background:transparent;border:2px solid #4ae3ff;color:#4ae3ff;cursor:pointer;border-radius:3px;transition:all .2s;}
+#ocephe:hover{background:#4ae3ff;color:#000;}
+#ofronttxt{font-size:11px;color:rgba(255,255,255,.35);letter-spacing:.14em;}
 #lock{position:fixed;inset:0;background:rgba(0,0,0,.93);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:200;}
 #lock h1{color:#c8a050;font-size:36px;letter-spacing:.28em;text-shadow:0 0 26px #906020;}
 #lock p{color:rgba(255,255,255,.55);font-size:12px;letter-spacing:.08em;max-width:520px;text-align:center;line-height:2;}
@@ -146,7 +149,12 @@ body{background:#000;overflow:hidden;font-family:'Courier New',monospace;}
   <div id="ztick">SPRINGFIELD M1903</div>
 </div></div>
 <div id="hitfl"></div>
-<div id="outcome"><div id="otitle"></div><div id="osub"></div></div>
+<div id="outcome">
+  <div id="ofronttxt">CEPHE 1</div>
+  <div id="otitle"></div>
+  <div id="osub"></div>
+  <button id="ocephe" onclick="nextFront()">DİĞER CEPHEYE GEÇ ▶</button>
+</div>
 <div id="lock">
   <h1>⚔ ORION PROTOCOL</h1>
   <p>WASD — Hareket &nbsp;|&nbsp; Sol Tık — Ateş &nbsp;|&nbsp; Sağ Tık — Zoom/Nişan<br>
@@ -432,7 +440,7 @@ function selectWeapon(i) {
 
 // ── Game State ───────────────────────────
 var GS={
-  running:false, outcome:null,
+  running:false, outcome:null, front:1,
   shield:250,health:300,armor:200,
   maxShield:250,maxHealth:300,maxArmor:200,
   shieldRegen:0,
@@ -769,8 +777,8 @@ function diffMult(){return getDifficulty();}  // 1..10
 
 // ── Soldiers ─────────────────────────────
 var soldiers=[];
-var MAX_SOLDIERS=12;
-var TOTAL_VORN=40;
+var MAX_SOLDIERS=20;
+var TOTAL_VORN=300;
 var vornRespawnsLeft=TOTAL_VORN;
 function spawnSoldiers() {
   ['uoc','vorn'].forEach(function(team) {
@@ -1251,7 +1259,7 @@ function updateScore(){
   var ua=soldiers.filter(function(s){return s.team==='uoc'&&s.alive;}).length;
   var va=soldiers.filter(function(s){return s.team==='vorn'&&s.alive;}).length;
   document.getElementById('uunit').textContent=ua+'/'+MAX_SOLDIERS;
-  document.getElementById('vunit').textContent=va+'/'+vornRespawnsLeft;
+  document.getElementById('vunit').textContent=va+' ('+vornRespawnsLeft+' kalan)';
   document.getElementById('dlvl').textContent=getDifficulty();
   // Zafer kontrolü
   if(!GS.outcome&&vornRespawnsLeft<=0&&va===0){
@@ -1272,11 +1280,56 @@ function showNotif(msg){var el=document.getElementById('ntxt');el.textContent=ms
 function tickNotif(dt){notifT-=dt;if(notifT<0)document.getElementById('ntxt').style.opacity='0';}
 function showOutcome(r,sub,col){
   GS.outcome=r;
+  if(document.pointerLockElement)document.exitPointerLock();
   var el=document.getElementById('outcome'); el.style.display='flex';
   var t=document.getElementById('otitle'),s=document.getElementById('osub');
-  if(r==='win'){t.textContent='ZAFER';t.style.color='#4ae3ff';el.style.background='rgba(0,30,60,.85)';s.textContent='TÜM NOKTALAR ELE GEÇİRİLDİ';}
-  else if(r==='lose'){t.textContent='MAĞLUP';t.style.color='#ff4444';el.style.background='rgba(50,0,0,.85)';s.textContent='VORN KUVVETLERİ SEKTÖRÜ ELE GEÇİRDİ';}
-  else{t.textContent=r;t.style.color=col||'#4ae3ff';el.style.background='rgba(0,30,60,.85)';s.textContent=sub||'';}
+  var btn=document.getElementById('ocephe');
+  document.getElementById('ofronttxt').textContent='CEPHE '+GS.front;
+  if(r==='win'){
+    t.textContent='ZAFER';t.style.color='#4ae3ff';
+    el.style.background='rgba(0,20,50,.92)';
+    s.textContent='TÜM NOKTALAR ELE GEÇİRİLDİ';
+    btn.style.display='block';
+  } else if(r==='lose'){
+    t.textContent='MAĞLUP';t.style.color='#ff4444';
+    el.style.background='rgba(40,0,0,.92)';
+    s.textContent='VORN KUVVETLERİ SEKTÖRÜ ELE GEÇİRDİ';
+    btn.style.display='none';
+  } else {
+    t.textContent=r;t.style.color=col||'#4ae3ff';
+    el.style.background='rgba(0,20,50,.92)';
+    s.textContent=sub||'';
+    btn.style.display='block';
+  }
+}
+
+function nextFront(){
+  GS.front++;
+  GS.outcome=null;
+  vornRespawnsLeft=TOTAL_VORN;
+  waveTimer=20;
+  // Oyuncuyu iyileştir
+  GS.shield=GS.maxShield; GS.health=GS.maxHealth; GS.armor=GS.maxArmor;
+  GS.playerDead=false; updateVitals();
+  // Askerleri temizle ve yeniden üret
+  soldiers.forEach(function(s){scene.remove(s.mesh);});
+  soldiers.length=0;
+  spawnSoldiers();
+  // Araçları temizle ve yeniden üret
+  vehicles.forEach(function(v){scene.remove(v.mesh);});
+  vehicles.length=0;
+  spawnVehicles();
+  // Hedefleri sıfırla
+  OBJS.forEach(function(o){o.owner='neutral';o.progress=0;});
+  updateObjVisuals();
+  // Oyuncuyu başlangıca al
+  exitVehicle();
+  camPivot.position.set(-74,TH(-74,0)+1.72,0);
+  yaw=.25; camPivot.rotation.y=yaw;
+  // Outcome gizle, yeni cephe bildirimi
+  document.getElementById('outcome').style.display='none';
+  document.getElementById('clkov').style.display='flex';
+  showNotif('CEPHE '+GS.front+' — SAVAŞ BAŞLIYOR!');
 }
 
 // ── Zoom ──────────────────────────────────
