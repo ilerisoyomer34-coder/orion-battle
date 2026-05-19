@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
 <title>WW3</title>
 <link rel="manifest" href="manifest.json"/>
 <meta name="theme-color" content="#4ae3ff"/>
@@ -91,6 +91,24 @@ body{background:#000;overflow:hidden;font-family:'Courier New',monospace;}
 #clkov{position:fixed;inset:0;background:rgba(0,0,0,.58);display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:150;cursor:crosshair;}
 #clkov span{color:#fff;font-size:20px;letter-spacing:.24em;}
 #clkov small{color:rgba(255,255,255,.45);font-size:10px;letter-spacing:.2em;}
+/* ── Mobile Controls ── */
+#mctrl{position:fixed;inset:0;pointer-events:none;z-index:80;display:none;touch-action:none;user-select:none;}
+#mjzone{position:absolute;left:0;bottom:0;width:48%;height:55%;pointer-events:all;touch-action:none;}
+#mjbase{position:absolute;width:110px;height:110px;border-radius:50%;border:2px solid rgba(255,255,255,.25);background:rgba(255,255,255,.07);transform:translate(-50%,-50%);pointer-events:none;display:none;}
+#mjthumb{position:absolute;width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.35);transform:translate(-50%,-50%);pointer-events:none;display:none;}
+#mright{position:absolute;right:0;top:0;width:52%;height:100%;pointer-events:all;touch-action:none;}
+/* Action buttons */
+.mbtn{position:absolute;border-radius:50%;border:2px solid rgba(255,255,255,.3);background:rgba(0,0,0,.45);color:#fff;font-size:13px;font-weight:700;letter-spacing:.05em;display:flex;align-items:center;justify-content:center;pointer-events:all;touch-action:manipulation;user-select:none;-webkit-tap-highlight-color:transparent;}
+#mbfire{width:76px;height:76px;right:18px;bottom:24px;border-color:rgba(255,80,80,.6);background:rgba(180,0,0,.45);font-size:11px;}
+#mbjump{width:54px;height:54px;right:104px;bottom:44px;border-color:rgba(255,255,255,.4);}
+#mbreload{width:48px;height:48px;right:170px;bottom:28px;font-size:11px;border-color:rgba(255,200,0,.5);}
+#mbzoom{width:48px;height:48px;right:18px;bottom:112px;font-size:11px;border-color:rgba(100,200,255,.5);}
+#mbveh{width:48px;height:48px;right:74px;bottom:112px;font-size:11px;border-color:rgba(255,200,0,.4);}
+#mbsprint{width:44px;height:44px;left:12px;bottom:calc(55% + 8px);font-size:10px;border-color:rgba(255,255,255,.3);}
+#mwbar{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);display:flex;gap:5px;pointer-events:all;}
+.mwbtn{width:36px;height:36px;border-radius:6px;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.5);color:rgba(255,255,255,.7);font-size:9px;display:flex;align-items:center;justify-content:center;touch-action:manipulation;-webkit-tap-highlight-color:transparent;flex-direction:column;gap:1px;}
+.mwbtn.active{border-color:#fa0;color:#fa0;background:rgba(80,50,0,.6);}
+.mwbtn span{font-size:7px;opacity:.6;}
 </style>
 </head>
 <body>
@@ -162,6 +180,18 @@ body{background:#000;overflow:hidden;font-family:'Courier New',monospace;}
      Space — Zıpla &nbsp;|&nbsp; Shift — Koş</p>
   <p class="hint">3 HEDEFİ ELE GEÇİR — ALPHA · BRAVO · CHARLIE</p>
   <button onclick="startGame()">SAVAŞA BAŞLA</button>
+</div>
+<div id="mctrl">
+  <div id="mjzone"></div>
+  <div id="mjbase"></div><div id="mjthumb"></div>
+  <div id="mright"></div>
+  <div class="mbtn" id="mbfire">ATEŞ</div>
+  <div class="mbtn" id="mbjump">↑</div>
+  <div class="mbtn" id="mbreload">R</div>
+  <div class="mbtn" id="mbzoom">🔭</div>
+  <div class="mbtn" id="mbveh">F</div>
+  <div class="mbtn" id="mbsprint">🏃</div>
+  <div id="mwbar"></div>
 </div>
 <div id="clkov" onclick="canvas.requestPointerLock()">
   <span>EKRANA TIKLA</span>
@@ -1072,7 +1102,7 @@ function driveVehicle(dt) {
     m.userData.turret.rotation.y=Math.atan2(td2.x,td2.z)-m.rotation.y;
   }
   vehShootCooldown=Math.max(0,vehShootCooldown-dt);
-  if(mouseDown&&document.pointerLockElement){vehShootCooldown<=0&&doVehicleShoot();}
+  if(mouseDown&&(document.pointerLockElement||isMobile)){vehShootCooldown<=0&&doVehicleShoot();}
 }
 function enterVehicle(v){GS.inVehicle=v;showNotif('ARACA BİNDİN — F İLE İN');}
 function exitVehicle(){if(!GS.inVehicle)return;GS.inVehicle=null;}
@@ -1507,7 +1537,7 @@ document.addEventListener('keydown',function(e){
 });
 document.addEventListener('keyup',function(e){keys[e.code]=false;});
 document.addEventListener('wheel',function(e){
-  if(!GS.running||!document.pointerLockElement)return;
+  if(!GS.running||(!document.pointerLockElement&&!isMobile))return;
   if(GS.zoomed){adjustSniperZoom(e.deltaY>0?2:-2);return;}
   var dir=e.deltaY>0?1:-1;
   var next=(curWeapon+dir+WEAPONS.length)%WEAPONS.length;
@@ -1522,7 +1552,7 @@ document.addEventListener('mousemove',function(e){
 document.addEventListener('mousedown',function(e){
   if(e.button===0){
     mouseDown=true;
-    if(GS.running&&document.pointerLockElement){
+    if(GS.running&&(document.pointerLockElement||isMobile)){
       if(GS.inVehicle){vehShootCooldown=0;doVehicleShoot();}
       else{shootCooldown=0;doShoot();}
     }
@@ -1549,8 +1579,14 @@ window.addEventListener('resize',function(){
 // ── Start ─────────────────────────────────
 function startGame(){
   document.getElementById('lock').style.display='none';
-  document.getElementById('clkov').style.display='flex';
-  GS.running=true;
+  if(isMobile){
+    document.getElementById('mctrl').style.display='block';
+    buildMobileWeaponBar();
+    GS.running=true;
+  } else {
+    document.getElementById('clkov').style.display='flex';
+    GS.running=true;
+  }
 }
 
 // ── Init ──────────────────────────────────
@@ -1560,6 +1596,141 @@ spawnSoldiers();spawnVehicles();
 buildWeaponHUD();buildPlayerWeapon();
 camPivot.position.set(-74,TH(-74,0)+1.72,0);
 yaw=.25; camPivot.rotation.y=yaw;
+
+// ── Mobile Controls ──────────────────────
+var isMobile=('ontouchstart' in window)||navigator.maxTouchPoints>0;
+var mjTouchId=null,mjBaseX=0,mjBaseY=0;
+var camTouchId=null,camPrevX=0,camPrevY=0;
+
+function buildMobileWeaponBar(){
+  var bar=document.getElementById('mwbar'); bar.innerHTML='';
+  var wnames=['M1','PUMP','AUTO','MINI','PSTL','SNP','BAZ'];
+  WEAPONS.forEach(function(w,i){
+    var d=document.createElement('div');
+    d.className='mwbtn'+(i===curWeapon?' active':'');
+    d.id='mwb'+i;
+    d.innerHTML='<b>'+(i+1)+'</b><span>'+wnames[i]+'</span>';
+    d.addEventListener('touchstart',function(e){e.stopPropagation();e.preventDefault();selectWeapon(i);updateMobileWeaponBar();},{passive:false});
+    bar.appendChild(d);
+  });
+}
+function updateMobileWeaponBar(){
+  WEAPONS.forEach(function(w,i){
+    var d=document.getElementById('mwb'+i);
+    if(d)d.className='mwbtn'+(i===curWeapon?' active':'');
+  });
+}
+
+function handleJoystick(cx,cy){
+  var dx=cx-mjBaseX, dy=cy-mjBaseY;
+  var dist=Math.sqrt(dx*dx+dy*dy);
+  var maxR=48;
+  var tx=mjBaseX+(dist>maxR?dx/dist*maxR:dx);
+  var ty=mjBaseY+(dist>maxR?dy/dist*maxR:dy);
+  var thumb=document.getElementById('mjthumb');
+  thumb.style.left=tx+'px'; thumb.style.top=ty+'px';
+  var nx=dist>8?dx/Math.max(dist,1):0, ny=dist>8?dy/Math.max(dist,1):0;
+  keys.KeyW=ny<-0.3; keys.KeyS=ny>0.3;
+  keys.KeyA=nx<-0.3; keys.KeyD=nx>0.3;
+  keys.ShiftLeft=dist>maxR*.8;
+}
+
+document.getElementById('mjzone').addEventListener('touchstart',function(e){
+  e.preventDefault();
+  var t=e.changedTouches[0];
+  if(mjTouchId!==null)return;
+  mjTouchId=t.identifier;
+  mjBaseX=t.clientX; mjBaseY=t.clientY;
+  var base=document.getElementById('mjbase'),thumb=document.getElementById('mjthumb');
+  base.style.left=mjBaseX+'px'; base.style.top=mjBaseY+'px';
+  base.style.display='block'; thumb.style.display='block';
+  thumb.style.left=mjBaseX+'px'; thumb.style.top=mjBaseY+'px';
+},{passive:false});
+
+document.addEventListener('touchmove',function(e){
+  e.preventDefault();
+  for(var i=0;i<e.changedTouches.length;i++){
+    var t=e.changedTouches[i];
+    if(t.identifier===mjTouchId){handleJoystick(t.clientX,t.clientY);}
+    if(t.identifier===camTouchId){
+      var dx=t.clientX-camPrevX, dy=t.clientY-camPrevY;
+      yaw-=dx*.005; pitch-=dy*.005;
+      pitch=Math.max(-Math.PI/2.1,Math.min(Math.PI/2.1,pitch));
+      camPivot.rotation.y=yaw; camera.rotation.x=pitch;
+      camPrevX=t.clientX; camPrevY=t.clientY;
+    }
+  }
+},{passive:false});
+
+document.addEventListener('touchend',function(e){
+  for(var i=0;i<e.changedTouches.length;i++){
+    var t=e.changedTouches[i];
+    if(t.identifier===mjTouchId){
+      mjTouchId=null;
+      keys.KeyW=keys.KeyS=keys.KeyA=keys.KeyD=keys.ShiftLeft=false;
+      document.getElementById('mjbase').style.display='none';
+      document.getElementById('mjthumb').style.display='none';
+    }
+    if(t.identifier===camTouchId){camTouchId=null;}
+  }
+},{passive:false});
+
+document.getElementById('mright').addEventListener('touchstart',function(e){
+  e.preventDefault();
+  var t=e.changedTouches[0];
+  if(camTouchId!==null)return;
+  camTouchId=t.identifier;
+  camPrevX=t.clientX; camPrevY=t.clientY;
+},{passive:false});
+
+// Ateş butonu
+(function(){
+  var el=document.getElementById('mbfire');
+  el.addEventListener('touchstart',function(e){e.preventDefault();e.stopPropagation();
+    mouseDown=true;
+    if(GS.running){if(GS.inVehicle){vehShootCooldown=0;doVehicleShoot();}else{shootCooldown=0;doShoot();}}
+  },{passive:false});
+  el.addEventListener('touchend',function(e){e.preventDefault();mouseDown=false;},{passive:false});
+})();
+
+// Zıplama
+document.getElementById('mbjump').addEventListener('touchstart',function(e){
+  e.preventDefault();e.stopPropagation();
+  if(onGround&&!GS.inVehicle&&!GS.playerDead)velY=8;
+},{passive:false});
+
+// Yeniden doldur
+document.getElementById('mbreload').addEventListener('touchstart',function(e){
+  e.preventDefault();e.stopPropagation();
+  var pa=playerAmmo[curWeapon];
+  if(!GS.reloading&&pa.cur<WEAPONS[curWeapon].ammo&&pa.res>0)startReload();
+},{passive:false});
+
+// Zoom / Dürbün
+document.getElementById('mbzoom').addEventListener('touchstart',function(e){
+  e.preventDefault();e.stopPropagation();
+  if(WEAPONS[curWeapon].zoom)setZoom(!GS.zoomed);
+},{passive:false});
+
+// Araç bin/in
+document.getElementById('mbveh').addEventListener('touchstart',function(e){
+  e.preventDefault();e.stopPropagation();
+  if(GS.inVehicle)exitVehicle();else if(GS.nearVehicle)enterVehicle(GS.nearVehicle);
+},{passive:false});
+
+// Sprint toggle
+document.getElementById('mbsprint').addEventListener('touchstart',function(e){
+  e.preventDefault();e.stopPropagation();
+  keys.ShiftLeft=!keys.ShiftLeft;
+  document.getElementById('mbsprint').style.borderColor=keys.ShiftLeft?'#fa0':'rgba(255,255,255,.3)';
+},{passive:false});
+
+// nextFront'ta mobil silah barını da yenile
+var _origNextFront=nextFront;
+nextFront=function(){
+  _origNextFront();
+  if(isMobile){document.getElementById('mctrl').style.display='block';buildMobileWeaponBar();}
+};
 
 // ── Game Loop ─────────────────────────────
 var clock=new THREE.Clock();
