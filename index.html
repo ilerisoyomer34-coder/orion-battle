@@ -13,8 +13,8 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-body{background:#000;overflow:hidden;font-family:'Courier New',monospace;touch-action:none;}
-#c{display:block;width:100vw;height:100svh;}
+body{background:#000;overflow:hidden;font-family:'Courier New',monospace;}
+#c{display:block;position:fixed;top:0;left:0;width:100%;height:100%;}
 #hud{position:fixed;inset:0;pointer-events:none;}
 #xhair{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:28px;height:28px;}
 #xhair::before,#xhair::after{content:'';position:absolute;background:rgba(255,255,255,.85);}
@@ -222,8 +222,8 @@ body{background:#000;overflow:hidden;font-family:'Courier New',monospace;touch-a
 // ═══════════════════════════════════════
 var canvas = document.getElementById('c');
 var renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true, powerPreference:'high-performance'});
-renderer.setPixelRatio(window.devicePixelRatio);
-renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.setSize(canvas.clientWidth||window.innerWidth, canvas.clientHeight||window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -1587,11 +1587,15 @@ document.addEventListener('pointerlockchange',function(){
   if(locked)ov.style.display='none';
   else if(GS.running&&!GS.outcome)ov.style.display='flex';
 });
-window.addEventListener('resize',function(){
-  camera.aspect=window.innerWidth/window.innerHeight;
+function onResize(){
+  var w=canvas.clientWidth||window.innerWidth;
+  var h=canvas.clientHeight||window.innerHeight;
+  camera.aspect=w/h;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth,window.innerHeight);
-});
+  renderer.setSize(w,h);
+}
+window.addEventListener('resize',onResize);
+screen.orientation&&screen.orientation.addEventListener('change',function(){setTimeout(onResize,200);});
 
 // ── Start ─────────────────────────────────
 function startGame(){
