@@ -13,14 +13,22 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-body{background:#000;overflow:hidden;font-family:'Courier New',monospace;}
-#c{display:block;width:100vw;height:100vh;}
+body{background:#000;overflow:hidden;font-family:'Courier New',monospace;touch-action:none;}
+#c{display:block;width:100vw;height:100svh;}
 #hud{position:fixed;inset:0;pointer-events:none;}
 #xhair{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:28px;height:28px;}
 #xhair::before,#xhair::after{content:'';position:absolute;background:rgba(255,255,255,.85);}
 #xhair::before{width:2px;height:12px;top:8px;left:13px;}
 #xhair::after{width:12px;height:2px;top:13px;left:8px;}
 #vitals{position:absolute;bottom:108px;left:26px;}
+@media(pointer:coarse){
+  #wbar{display:none!important;}
+  #vitals{bottom:auto;top:8px;left:8px;transform:scale(.82);transform-origin:top left;}
+  #adisplay{bottom:auto;top:40px;right:8px;left:auto;}
+  #mmwrap{display:none;}
+  #unitbar{font-size:8px;padding:3px 8px;gap:8px;top:8px;}
+  #spl{top:auto;bottom:160px;}
+}
 .vrow{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
 .vlbl{color:rgba(255,255,255,.6);font-size:10px;width:50px;text-align:right;letter-spacing:.07em;}
 .vbg{width:155px;height:8px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.18);border-radius:1px;overflow:hidden;}
@@ -92,23 +100,32 @@ body{background:#000;overflow:hidden;font-family:'Courier New',monospace;}
 #clkov span{color:#fff;font-size:20px;letter-spacing:.24em;}
 #clkov small{color:rgba(255,255,255,.45);font-size:10px;letter-spacing:.2em;}
 /* ── Mobile Controls ── */
-#mctrl{position:fixed;inset:0;pointer-events:none;z-index:80;display:none;touch-action:none;user-select:none;}
-#mjzone{position:absolute;left:0;bottom:0;width:48%;height:55%;pointer-events:all;touch-action:none;}
-#mjbase{position:absolute;width:110px;height:110px;border-radius:50%;border:2px solid rgba(255,255,255,.25);background:rgba(255,255,255,.07);transform:translate(-50%,-50%);pointer-events:none;display:none;}
-#mjthumb{position:absolute;width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.35);transform:translate(-50%,-50%);pointer-events:none;display:none;}
-#mright{position:absolute;right:0;top:0;width:52%;height:100%;pointer-events:all;touch-action:none;}
-/* Action buttons */
-.mbtn{position:absolute;border-radius:50%;border:2px solid rgba(255,255,255,.3);background:rgba(0,0,0,.45);color:#fff;font-size:13px;font-weight:700;letter-spacing:.05em;display:flex;align-items:center;justify-content:center;pointer-events:all;touch-action:manipulation;user-select:none;-webkit-tap-highlight-color:transparent;}
-#mbfire{width:76px;height:76px;right:18px;bottom:24px;border-color:rgba(255,80,80,.6);background:rgba(180,0,0,.45);font-size:11px;}
-#mbjump{width:54px;height:54px;right:104px;bottom:44px;border-color:rgba(255,255,255,.4);}
-#mbreload{width:48px;height:48px;right:170px;bottom:28px;font-size:11px;border-color:rgba(255,200,0,.5);}
-#mbzoom{width:48px;height:48px;right:18px;bottom:112px;font-size:11px;border-color:rgba(100,200,255,.5);}
-#mbveh{width:48px;height:48px;right:74px;bottom:112px;font-size:11px;border-color:rgba(255,200,0,.4);}
-#mbsprint{width:44px;height:44px;left:12px;bottom:calc(55% + 8px);font-size:10px;border-color:rgba(255,255,255,.3);}
-#mwbar{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);display:flex;gap:5px;pointer-events:all;}
-.mwbtn{width:36px;height:36px;border-radius:6px;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.5);color:rgba(255,255,255,.7);font-size:9px;display:flex;align-items:center;justify-content:center;touch-action:manipulation;-webkit-tap-highlight-color:transparent;flex-direction:column;gap:1px;}
-.mwbtn.active{border-color:#fa0;color:#fa0;background:rgba(80,50,0,.6);}
-.mwbtn span{font-size:7px;opacity:.6;}
+#mctrl{position:fixed;inset:0;pointer-events:none;z-index:80;display:none;user-select:none;}
+/* Joystick zone: sol yarı */
+#mjzone{position:fixed;left:0;top:0;width:45%;height:100%;pointer-events:all;touch-action:none;}
+/* Kamera zone: sağ yarı */
+#mright{position:fixed;right:0;top:0;width:55%;height:100%;pointer-events:all;touch-action:none;}
+/* Joystick görseli */
+#mjbase{position:fixed;width:18vmin;height:18vmin;border-radius:50%;border:2px solid rgba(255,255,255,.3);background:rgba(255,255,255,.06);transform:translate(-50%,-50%);pointer-events:none;display:none;}
+#mjthumb{position:fixed;width:8vmin;height:8vmin;border-radius:50%;background:rgba(255,255,255,.4);box-shadow:0 0 8px rgba(255,255,255,.2);transform:translate(-50%,-50%);pointer-events:none;display:none;}
+/* Butonlar */
+.mbtn{position:fixed;border-radius:50%;border:2px solid rgba(255,255,255,.3);background:rgba(0,0,0,.5);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;pointer-events:all;touch-action:manipulation;-webkit-tap-highlight-color:transparent;backdrop-filter:blur(2px);}
+/* Ateş butonu - büyük, sağ alt */
+#mbfire{width:14vmin;height:14vmin;font-size:2.2vmin;right:3vmin;bottom:calc(env(safe-area-inset-bottom,0px) + 4vmin);border-color:rgba(255,60,60,.7);background:rgba(160,0,0,.55);}
+/* Zıpla - ateşin solunda */
+#mbjump{width:10vmin;height:10vmin;font-size:3vmin;right:19vmin;bottom:calc(env(safe-area-inset-bottom,0px) + 7vmin);border-color:rgba(255,255,255,.4);}
+/* Reload - zıplamanın solunda */
+#mbreload{width:9vmin;height:9vmin;font-size:2.2vmin;right:31vmin;bottom:calc(env(safe-area-inset-bottom,0px) + 5vmin);border-color:rgba(255,200,0,.5);}
+/* Zoom - sağ üst */
+#mbzoom{width:9vmin;height:9vmin;font-size:2vmin;right:3vmin;bottom:calc(env(safe-area-inset-bottom,0px) + 20vmin);border-color:rgba(80,200,255,.5);}
+/* Araç - zoomun yanı */
+#mbveh{width:9vmin;height:9vmin;font-size:2vmin;right:14vmin;bottom:calc(env(safe-area-inset-bottom,0px) + 20vmin);border-color:rgba(255,200,0,.4);}
+/* Silah barı - tam alt orta */
+#mwbar{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 1vmin);left:50%;transform:translateX(-50%);display:flex;gap:1.2vmin;pointer-events:all;z-index:81;}
+.mwbtn{width:8vmin;height:8vmin;min-width:28px;min-height:28px;border-radius:1.5vmin;border:1.5px solid rgba(255,255,255,.22);background:rgba(0,0,0,.55);color:rgba(255,255,255,.75);font-size:2vmin;display:flex;align-items:center;justify-content:center;touch-action:manipulation;-webkit-tap-highlight-color:transparent;flex-direction:column;gap:0.3vmin;backdrop-filter:blur(2px);}
+.mwbtn b{font-size:2.2vmin;line-height:1;}
+.mwbtn span{font-size:1.4vmin;opacity:.55;}
+.mwbtn.active{border-color:#fa0;color:#fa0;background:rgba(60,35,0,.7);}
 </style>
 </head>
 <body>
@@ -183,16 +200,16 @@ body{background:#000;overflow:hidden;font-family:'Courier New',monospace;}
 </div>
 <div id="mctrl">
   <div id="mjzone"></div>
-  <div id="mjbase"></div><div id="mjthumb"></div>
   <div id="mright"></div>
-  <div class="mbtn" id="mbfire">ATEŞ</div>
+  <div class="mbtn" id="mbfire">🔥<br><span style="font-size:1.5vmin">ATEŞ</span></div>
   <div class="mbtn" id="mbjump">↑</div>
-  <div class="mbtn" id="mbreload">R</div>
-  <div class="mbtn" id="mbzoom">🔭</div>
-  <div class="mbtn" id="mbveh">F</div>
-  <div class="mbtn" id="mbsprint">🏃</div>
-  <div id="mwbar"></div>
+  <div class="mbtn" id="mbreload" style="font-size:2vmin">↺<br><span style="font-size:1.4vmin">R</span></div>
+  <div class="mbtn" id="mbzoom" style="font-size:2vmin">🔭</div>
+  <div class="mbtn" id="mbveh" style="font-size:2vmin">🚗<br><span style="font-size:1.4vmin">F</span></div>
 </div>
+<div id="mjbase"></div>
+<div id="mjthumb"></div>
+<div id="mwbar"></div>
 <div id="clkov" onclick="canvas.requestPointerLock()">
   <span>EKRANA TIKLA</span>
   <small>ESC ile serbest bırak</small>
@@ -1624,15 +1641,16 @@ function updateMobileWeaponBar(){
 function handleJoystick(cx,cy){
   var dx=cx-mjBaseX, dy=cy-mjBaseY;
   var dist=Math.sqrt(dx*dx+dy*dy);
-  var maxR=48;
+  var maxR=Math.min(window.innerWidth,window.innerHeight)*0.09;
   var tx=mjBaseX+(dist>maxR?dx/dist*maxR:dx);
   var ty=mjBaseY+(dist>maxR?dy/dist*maxR:dy);
   var thumb=document.getElementById('mjthumb');
   thumb.style.left=tx+'px'; thumb.style.top=ty+'px';
-  var nx=dist>8?dx/Math.max(dist,1):0, ny=dist>8?dy/Math.max(dist,1):0;
-  keys.KeyW=ny<-0.3; keys.KeyS=ny>0.3;
-  keys.KeyA=nx<-0.3; keys.KeyD=nx>0.3;
-  keys.ShiftLeft=dist>maxR*.8;
+  var dead=maxR*0.18;
+  var nx=dist>dead?dx/Math.max(dist,1):0, ny=dist>dead?dy/Math.max(dist,1):0;
+  keys.KeyW=ny<-0.28; keys.KeyS=ny>0.28;
+  keys.KeyA=nx<-0.28; keys.KeyD=nx>0.28;
+  keys.ShiftLeft=dist>maxR*0.75;
 }
 
 document.getElementById('mjzone').addEventListener('touchstart',function(e){
@@ -1641,7 +1659,11 @@ document.getElementById('mjzone').addEventListener('touchstart',function(e){
   if(mjTouchId!==null)return;
   mjTouchId=t.identifier;
   mjBaseX=t.clientX; mjBaseY=t.clientY;
+  var bsize=Math.min(window.innerWidth,window.innerHeight)*0.18;
+  var tsize=bsize*0.44;
   var base=document.getElementById('mjbase'),thumb=document.getElementById('mjthumb');
+  base.style.width=bsize+'px'; base.style.height=bsize+'px';
+  thumb.style.width=tsize+'px'; thumb.style.height=tsize+'px';
   base.style.left=mjBaseX+'px'; base.style.top=mjBaseY+'px';
   base.style.display='block'; thumb.style.display='block';
   thumb.style.left=mjBaseX+'px'; thumb.style.top=mjBaseY+'px';
