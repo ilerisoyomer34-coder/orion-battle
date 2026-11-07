@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>KOMUTA: Gizli Operasyon</title>
+<meta name="description" content="Üçüncü şahıs taktiksel aksiyon + komuta + rütbe ilerlemesi. Tarayıcıda çalışan 3D oyun.">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f1724">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="KOMUTA">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<!-- Açılış -->
+<div id="boot">
+  <div class="boot-in">
+    <div class="bar-acc"></div>
+    <h1>KOMUTA</h1><h2>GİZLİ OPERASYON</h2>
+    <div class="boot-bar"><i id="bootBar"></i></div>
+    <div id="bootTxt">Yükleniyor…</div>
+  </div>
+</div>
+
+<!-- HUD -->
+<div id="hud" class="hidden">
+  <div id="vitals">
+    <div class="rank"><span id="rankName">—</span><div class="xp"><i id="xpFill"></i></div><small id="xpTxt"></small></div>
+    <div class="vrow"><label>SAĞLIK</label><div class="vbar hp"><i id="hpFill"></i></div><span id="hpNum">100</span></div>
+    <div class="vrow"><label>ZIRH</label><div class="vbar ar"><i id="arFill"></i></div><span id="arNum">0</span></div>
+    <div class="vrow"><label>KOŞU</label><div class="vbar st"><i id="stFill"></i></div><span></span></div>
+  </div>
+  <div id="hint"></div>
+  <div id="objective"><div id="objMain"></div><div id="objTime"></div></div>
+  <div id="toasts"></div>
+  <div id="bigmsg"></div>
+  <div id="squad"></div>
+  <div id="stealth"><span id="stealthTxt">GİZLİ</span><div class="sbar"><i id="stealthFill"></i></div></div>
+  <div id="radio"></div>
+  <canvas id="minimap" width="190" height="190"></canvas>
+  <div id="weapon">
+    <div id="gadget"></div>
+    <div class="ammo"><span id="ammoBig">30</span><span id="ammoRes">/ 120</span></div>
+    <div id="wName">—</div><div id="wSub"></div><div id="stance">AYAKTA</div>
+  </div>
+  <div id="vehHud" class="hidden">
+    <div id="vName">Araç</div><div id="vSpeed">0 km/s</div>
+    <div class="vrow"><label>KONDİSYON</label><div class="vbar hp"><i id="vHpFill"></i></div><span id="vHp">100%</span></div>
+    <div id="vSeats"></div><div id="vHelp"></div>
+  </div>
+  <div id="xhair"><i class="t"></i><i class="b"></i><i class="l"></i><i class="r"></i></div>
+  <div id="dot"></div>
+  <div id="hitmark"></div>
+  <div id="prompt"><div id="promptRing"></div><span id="promptTxt"></span></div>
+  <div id="markers"></div>
+  <div id="fps" class="hidden"></div>
+</div>
+<div id="scope"><div class="scope-c"></div></div>
+<div id="nvg"></div>
+<div id="dmg"></div>
+<div id="fade"></div>
+<div id="letterbox"><i></i><i></i></div>
+<div id="titleCard"></div>
+
+<!-- Komut tekeri / harita / günlük / diyalog / tuş takımı / asansör -->
+<div id="wheel" class="hidden"></div>
+<div id="journal" class="hidden"></div>
+<div id="mapScr" class="hidden">
+  <canvas id="mapCanvas"></canvas>
+  <div class="map-top"><b>TAKTİK HARİTA</b> · Sol tık: seçili ekip konuma ilerler · Sağ tık: bölgeyi korur · Sürükle: kaydır · Tekerlek: yakınlaştır <button id="mapClose">Kapat (M)</button></div>
+  <div class="map-leg"><span class="lg-p">▲ Sen</span><span class="lg-s">● Ekip</span><span class="lg-e">● Düşman (görülen/işaretli)</span><span class="lg-v">■ Araç</span><span class="lg-o">◆ Hedef</span><span class="lg-z">● Güvenli bölge</span></div>
+</div>
+<div id="dialog" class="hidden"><div class="dlg-in"><div id="dlgWho"></div><div id="dlgText"></div><div id="dlgChoices"></div></div></div>
+<div id="keypad" class="hidden"><div class="kp-in"><div id="kpTitle"></div><div id="kpDisp">_ _ _ _</div><div id="kpKeys"></div><small>Rakam tuşları · Enter onay · Esc vazgeç</small></div></div>
+<div id="elevator" class="hidden"><div class="kp-in"><div class="kp-t">ASANSÖR</div><div id="elevList"></div></div></div>
+
+<!-- Ana menü -->
+<div id="menu" class="screen hidden">
+  <div class="menu-art"></div>
+  <div class="menu-in">
+    <div class="bar-acc"></div>
+    <h1>KOMUTA</h1><h2>GİZLİ OPERASYON</h2>
+    <div class="mtag">3D TAKTİKSEL AKSİYON · KOMUTA · RÜTBE İLERLEMESİ</div>
+    <div class="feat">Rütbe ve komuta sistemi • Ekip yönetimi • Gizli görevler<br>Tanklar • Helikopterler • Zırhlı araçlar • Mafya TIR konvoyları</div>
+    <div id="menuRank"></div>
+    <div class="mbtns">
+      <button id="btnContinue" class="primary">KAMPANYAYA DEVAM ›</button>
+      <button id="btnNew">KAMPANYAYA BAŞLA</button>
+      <button id="btnSettings" class="ghost">Ayarlar</button>
+      <button id="btnHelp" class="ghost">Kontroller</button>
+      <button id="btnFull" class="ghost">Tam ekran</button>
+    </div>
+    <div class="fine">Kurgu notu: şehir, teşkilat, mafya örgütü ve seçkin birlik adları kurgusaldır.</div>
+  </div>
+</div>
+
+<!-- Operasyon merkezi -->
+<div id="hq" class="screen hidden">
+  <div class="hq-top"><div class="hq-title"><small>KOMUTA / GİZLİ OPERASYON</small><b>OPERASYON MERKEZİ</b></div><div id="hqRank"></div></div>
+  <div id="hqTabs"><button data-tab="missions">GÖREVLER</button><button data-tab="personnel">PERSONEL</button><button data-tab="skills">YETENEKLER</button><button data-tab="ranks">RÜTBE</button><button data-tab="archive">ARŞİV</button><button data-tab="settings">AYARLAR</button><button data-tab="menu">ANA MENÜ</button></div>
+  <div id="hqBody"></div>
+</div>
+<div id="brief" class="screen hidden"></div>
+<div id="report" class="screen hidden"></div>
+<div id="promo" class="screen hidden"></div>
+<div id="pause" class="screen hidden"><div class="pause-in"><h2>DURAKLATILDI</h2><button id="pResume" class="primary">Devam et</button><button id="pRestart">Görevi yeniden başlat</button><button id="pSettings" class="ghost">Ayarlar</button><button id="pHelp" class="ghost">Kontroller</button><button id="pQuit" class="ghost">Merkeze dön</button></div></div>
+<div id="settingsScr" class="screen hidden"><div class="panel"><h2>AYARLAR</h2><div id="settingsBody"></div><button id="settingsBack">‹ Geri</button></div></div>
+<div id="helpScr" class="screen hidden"><div class="panel wide"><h2>KONTROLLER</h2>
+  <div class="help-cols">
+    <table><tr><th colspan="2">Bilgisayar</th></tr>
+      <tr><td>WASD</td><td>Hareket</td></tr><tr><td>Fare</td><td>Kamera</td></tr><tr><td>Shift</td><td>Koş</td></tr><tr><td>C / Ctrl</td><td>Eğil (çömel)</td></tr>
+      <tr><td>Boşluk</td><td>Zıpla · helikopterde yüksel</td></tr><tr><td>E</td><td>Etkileşim (basılı tut: uzun işlemler)</td></tr><tr><td>Sağ fare</td><td>Nişan</td></tr><tr><td>Sol fare</td><td>Ateş / duruşa bağlı eylem</td></tr>
+      <tr><td>R</td><td>Şarjör değiştir</td></tr><tr><td>X / tekerlek</td><td>Silah değiştir</td></tr><tr><td>H</td><td>Silahı kılıfa koy / çek</td></tr><tr><td>G</td><td>Ekipman (ilk yardım, dron, şok bombası)</td></tr>
+      <tr><td>N</td><td>Gece görüş</td></tr><tr><td>V</td><td>Omuz / araç kamerası</td></tr><tr><td>L</td><td>Araç farları</td></tr><tr><td>Esc / P</td><td>Duraklat</td></tr></table>
+    <table><tr><th colspan="2">Komuta</th></tr>
+      <tr><td>Q (basılı)</td><td>Komut tekeri — oyun yavaşlar</td></tr><tr><td>1–8</td><td>Asker seç (Shift: ekle)</td></tr><tr><td>0 / `</td><td>Tümünü seç</td></tr>
+      <tr><td>F</td><td>Beni takip et</td></tr><tr><td>B</td><td>Burada bekle</td></tr><tr><td>T / orta tık</td><td>Nişangâhtaki konuma ilerle</td></tr>
+      <tr><td>Tab</td><td>Ekip / görev günlüğü</td></tr><tr><td>M</td><td>Taktik harita (tıkla: emir ver)</td></tr>
+      <tr><th colspan="2">Gizlilik</th></tr>
+      <tr><td>Arkadan E</td><td>Sessiz etkisizleştirme</td></tr><tr><td>Nişan + E</td><td>"Teslim ol!" çağrısı</td></tr><tr><td>Teslim olana E</td><td>Kelepçele (gözaltı bonusu)</td></tr></table>
+    <table><tr><th colspan="2">Dokunmatik (tablet/telefon)</th></tr>
+      <tr><td>Sol joystick</td><td>Hareket (sona it: koş)</td></tr><tr><td>Sağ alan</td><td>Kamera</td></tr><tr><td>ATEŞ / NİŞAN</td><td>Ateş, nişan</td></tr><tr><td>E · Q · M · TAB</td><td>Etkileşim, komut, harita, ekip</td></tr>
+      <tr><th colspan="2">Göstergeler</th></tr>
+      <tr><td>? sarı</td><td>Şüphelendi</td></tr><tr><td>! turuncu</td><td>Arıyor</td></tr><tr><td>! kırmızı</td><td>Alarm / çatışma</td></tr><tr><td>◆</td><td>Aktif hedef</td></tr></table>
+  </div><button id="helpBack">‹ Geri</button></div></div>
+
+<!-- Dokunmatik -->
+<div id="touch" class="hidden">
+  <div id="tlook"></div>
+  <div id="tjoy"><div id="tknob"></div></div>
+  <div class="tb tb-fire" data-k="T_fire">ATEŞ</div>
+  <div class="tb tb-aim" data-k="T_aim" data-toggle="1">NİŞAN</div>
+  <div class="tb tb-e" data-k="T_interact">E</div>
+  <div class="tb tb-jump" data-k="T_jump">▲</div>
+  <div class="tb tb-crouch" data-k="T_crouch">▼</div>
+  <div class="tb tb-r" data-k="T_reload">R</div>
+  <div class="tb tb-q" data-k="T_wheel">KOMUT</div>
+  <div class="tb tb-f" data-k="T_follow">TAKİP</div>
+  <div class="tb tb-b" data-k="T_hold">BEKLE</div>
+  <div class="tb tb-t" data-k="T_move">GİT</div>
+  <div class="tb tb-g" data-k="T_gadget">G</div>
+  <div class="tb tb-h" data-k="T_holster">H</div>
+  <div class="tb tb-x" data-k="T_weapon">X</div>
+  <div class="tb tb-m" data-k="T_map">HARİTA</div>
+  <div class="tb tb-tab" data-k="T_journal">EKİP</div>
+  <div class="tb tb-v" data-k="T_camera">V</div>
+  <div class="tb tb-p" data-k="T_pause">❚❚</div>
+</div>
+
+<script src="lib/three.min.js"></script>
+<script src="js/core.js"></script>
+<script src="js/textures.js"></script>
+<script src="js/models.js"></script>
+<script src="js/vehmodels.js"></script>
+<script src="js/world.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/combat.js"></script>
+<script src="js/vehicles.js"></script>
+<script src="js/player.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/progression.js"></script>
+<script src="js/missions.js"></script>
+<script src="js/missiondefs.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
