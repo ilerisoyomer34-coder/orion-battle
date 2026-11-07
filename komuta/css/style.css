@@ -297,14 +297,28 @@ button:disabled { opacity: .35; cursor: default; }
 .tb-m, .tb-tab { top: 2vmin; width: 13vmin; height: 7vmin; border-radius: 8px; font-size: 1.8vmin; } .tb-m { left: 42vmin; } .tb-tab { left: 57vmin; }
 .tb-p { top: 2vmin; left: 30vmin; width: 9vmin; height: 7vmin; border-radius: 8px; }
 body.cine #hud { opacity: 0; transition: opacity .4s; }
-body.touchmode #squad { transform: scale(.82); transform-origin: top right; }
-body.touchmode #vitals { transform: scale(.8); transform-origin: top left; }
-body.touchmode #minimap { width: 130px; height: 130px; bottom: auto; top: 108px; left: 10px; }
-body.touchmode #stealth { bottom: auto; top: 244px; left: 14px; width: 130px; }
-body.touchmode #radio { bottom: auto; top: 270px; width: 260px; }
-body.touchmode #weapon, body.touchmode #vehHud { bottom: auto; top: 46%; right: 12px; transform: scale(.75); transform-origin: right center; }
+body.touchmode #vitals { transform: scale(.65); transform-origin: top left; top: 4px; left: 4px; }
+body.touchmode .tb-p { top: 72px; left: 8px; width: 9vmin; height: 7vmin; }
+body.touchmode .tb-m { top: 72px; left: calc(8px + 11vmin); }
+body.touchmode .tb-tab { top: 72px; left: calc(8px + 26vmin); }
+body.touchmode #stealth { bottom: auto; top: calc(80px + 8vmin); left: 10px; width: 120px; font-size: 10px; }
+body.touchmode #radio { bottom: auto; top: calc(104px + 8vmin); left: 6px; width: 34vw; }
+body.touchmode .rline { font-size: 10px; }
+body.touchmode .rline:nth-last-child(n+3) { display: none; }
+body.touchmode #minimap { width: 110px; height: 110px; top: auto; bottom: 8px; left: 37vmin; }
+body.touchmode #weapon, body.touchmode #vehHud { top: auto; bottom: 6px; right: auto; left: calc(37vmin + 120px); transform: scale(.62); transform-origin: left bottom; text-align: left; }
+body.touchmode #squad { transform: scale(.72); transform-origin: top right; top: 6px; right: 6px; }
+body.touchmode #objective { top: 4px; min-width: 0; max-width: 38vw; }
+body.touchmode #objMain div { font-size: 11px; padding: 3px 8px; }
+body.touchmode #toasts { top: 70px; width: 44vw; }
+body.touchmode .toast { font-size: 11px; padding: 4px 10px; }
+body.touchmode #hint { top: 52px; left: 50%; max-width: 44vw; font-size: 11px; transform: translate(-50%, -10px); }
+body.touchmode #hint.show { transform: translate(-50%, 0); }
+body.touchmode #titleCard { bottom: auto; top: 24vh; left: 50%; transform: translateX(-50%); white-space: nowrap; }
+body.touchmode .tc-no { font-size: 22px; } body.touchmode .tc-sub { font-size: 12px; }
 body.touchmode #prompt { top: 40%; }
 body.touchmode .wh-row { top: calc(50% + 200px); }
+body.touchmode .tb { font-size: 1.9vmin; }
 
 @media (max-width: 900px) {
   .br-wrap { grid-template-columns: 1fr; } .br-cols, .rep-cols, .jcols { grid-template-columns: 1fr; }
@@ -313,6 +327,12 @@ body.touchmode .wh-row { top: calc(50% + 200px); }
   #radio { width: 240px; }
 }
 @media (max-height: 520px) {
+  #menu { align-items: flex-start; padding: 4vh 0; }
+  #boot h1, .menu-in h1 { font-size: 44px; } #boot h2, .menu-in h2 { font-size: 22px; margin-bottom: 10px; }
+  .menu-in .feat { display: none; } .menu-in .bar-acc { margin-bottom: 8px; }
+  .mbtns { gap: 6px; } .mbtns button { padding: 8px 14px; font-size: 13px; }
+  #hq { padding: 10px 3vw 30px; } .hq-title b { font-size: 18px; }
+  .br-file { padding: 16px 18px; } .br-file h1 { font-size: 24px; }
   .wh-it { width: 112px; padding: 6px 4px; } .wh-it b { font-size: 11px; }
   .wh-center { width: 120px; height: 120px; }
 }

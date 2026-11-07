@@ -114,7 +114,7 @@
       if (cam) {
         const d = cam.position.distanceToSquared(this.pos);
         if (d > 160 * 160) { this.root.visible = d < 260 * 260; return; }
-        if (d < 1.6 * 1.6 && this !== K.game.player && K.cam.mode === 'foot') { this.root.visible = false; return; }
+        if (d < 2.1 * 2.1 && this !== K.game.player && K.cam.mode === 'foot') { this.root.visible = false; return; }
         const cs = K.game.charShadows || 0, sh = d < cs * cs;
         if (sh !== this._sh) { this._sh = sh; this.root.traverse((o) => { if (o.isMesh) o.castShadow = sh; }); }
       }

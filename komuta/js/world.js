@@ -70,7 +70,7 @@
   // ───────── Çarpıştırıcılar ─────────
   function hkey(ix, iz) { return (ix + 1024) * 4096 + (iz + 1024); }
   function addC(x0, y0, z0, x1, y1, z1, o = {}) {
-    const c = { min: { x: Math.min(x0, x1), y: Math.min(y0, y1), z: Math.min(z0, z1) }, max: { x: Math.max(x0, x1), y: Math.max(y0, y1), z: Math.max(z0, z1) }, on: true, surf: o.surf || 'concrete', nav: o.nav !== false, door: o.door || null, tag: o.tag || null, _s: 0, cells: [] };
+    const c = { min: { x: Math.min(x0, x1), y: Math.min(y0, y1), z: Math.min(z0, z1) }, max: { x: Math.max(x0, x1), y: Math.max(y0, y1), z: Math.max(z0, z1) }, on: true, surf: o.surf || 'concrete', nav: o.nav !== false, door: o.door || null, tag: o.tag || null, see: !!o.see, _s: 0, cells: [] };
     W.colliders.push(c);
     hashInsert(c);
     return c;
@@ -169,6 +169,7 @@
       for (let i = 0; i < list.length; i++) {
         const c = list[i];
         if (opts && opts.ignoreDoors && c.door) continue;
+        if (c.see && !(opts && opts.solid)) continue;
         const t = rayBox(ox, oy, oz, dx, dy, dz, c, best);
         if (t > 0 && t < best) { best = t; hitC = c; hnx = rayBox.nx; hny = rayBox.ny; hnz = rayBox.nz; }
       }
@@ -452,7 +453,8 @@
       scene.add(pivot);
       d.mesh = mesh;
       const hw = w / 2;
-      d.col = o.axis === 'x' ? addC(o.x - hw, y, o.z - 0.12, o.x + hw, y + h, o.z + 0.12, { door: d, surf: 'wood' }) : addC(o.x - 0.12, y, o.z - hw, o.x + 0.12, y + h, o.z + hw, { door: d, surf: 'wood' });
+      const dop = { door: d, surf: o.glass ? 'metal' : 'wood', see: !!o.glass || !!o.fenceGate };
+      d.col = o.axis === 'x' ? addC(o.x - hw, y, o.z - 0.12, o.x + hw, y + h, o.z + 0.12, dop) : addC(o.x - 0.12, y, o.z - hw, o.x + 0.12, y + h, o.z + hw, dop);
       d.setOpen = function (v, silent) {
         if (v && d.locked) return false;
         if (d.open === v) return true;
@@ -1007,17 +1009,17 @@
         if (axis === 'x') { G.fence.box(t, 0, c, e, fh, c, { us: 3, vs: 3, faces: 'pz' }); P.cyl(0.05, 0.05, fh, 6, 0x777777, 'METAL', t, fh / 2, c); }
         else { G.fence.box(c, 0, t, c, fh, e, { us: 3, vs: 3, faces: 'px' }); P.cyl(0.05, 0.05, fh, 6, 0x777777, 'METAL', c, fh / 2, t); }
       }
-      if (axis === 'x') W.addC(a, 0, c - 0.1, b, fh, c + 0.1, { surf: 'metal' }); else W.addC(c - 0.1, 0, a, c + 0.1, fh, b, { surf: 'metal' });
+      if (axis === 'x') W.addC(a, 0, c - 0.1, b, fh, c + 0.1, { surf: 'metal', see: true }); else W.addC(c - 0.1, 0, a, c + 0.1, fh, b, { surf: 'metal', see: true });
     };
     fenceSeg('x', 22, 100, 170); fenceSeg('x', 95, 100, 130); fenceSeg('x', 95, 138, 170);
     fenceSeg('z', 100, 22, 95); fenceSeg('z', 170, 22, 59.5); fenceSeg('z', 170, 62.5, 95);
     // kesilebilir çit parçası
     const cutMesh = new THREE.Mesh(new THREE.PlaneGeometry(3, fh), W.mats.fence);
     cutMesh.rotation.y = Math.PI / 2; cutMesh.position.set(170, fh / 2, 61); scene.add(cutMesh);
-    const cutC = W.addC(169.9, 0, 59.5, 170.1, fh, 62.5, { surf: 'metal', door: { locked: true, fence: true } });
+    const cutC = W.addC(169.9, 0, 59.5, 170.1, fh, 62.5, { surf: 'metal', see: true, door: { locked: true, fence: true } });
     W.depotFence = { mesh: cutMesh, col: cutC, cut: false };
     // ana kapı (sürgülü)
-    W.depotGate = door({ x: 134, z: 95, axis: 'x', w: 8, h: 2.6, metal: true, locked: true, name: 'Depo ana kapısı' });
+    W.depotGate = door({ x: 134, z: 95, axis: 'x', w: 8, h: 2.6, metal: true, locked: true, fenceGate: true, name: 'Depo ana kapısı' });
     // hangar
     const x0 = 110, x1 = 160, z0 = 30, z1 = 80, h = 10;
     wall('x', z1, x0, x1, 0, h, 0.3, [[128, 136, 5.5]], { fg: FG.ind, outer: 1, surf: 'metal', gb: G.metal });
@@ -1073,7 +1075,7 @@
         if (axis === 'x') { G.fence.box(t, 0, c, e, fh, c, { us: 3, vs: 3, faces: 'pz' }); P.cyl(0.05, 0.05, fh, 6, 0x777777, 'METAL', t, fh / 2, c); }
         else { G.fence.box(c, 0, t, c, fh, e, { us: 3, vs: 3, faces: 'px' }); P.cyl(0.05, 0.05, fh, 6, 0x777777, 'METAL', c, fh / 2, t); }
       }
-      if (axis === 'x') W.addC(a, 0, c - 0.1, b, fh, c + 0.1, { surf: 'metal' }); else W.addC(c - 0.1, 0, a, c + 0.1, fh, b, { surf: 'metal' });
+      if (axis === 'x') W.addC(a, 0, c - 0.1, b, fh, c + 0.1, { surf: 'metal', see: true }); else W.addC(c - 0.1, 0, a, c + 0.1, fh, b, { surf: 'metal', see: true });
     }
     // kontrol binası (A bölgesi)
     const x0 = -32, x1 = -6, z0 = 26, z1 = 48, h = 4;
@@ -1116,7 +1118,7 @@
         if (axis === 'x') { G.fence.box(t, 0, c, e, fh, c, { us: 3, vs: 3, faces: 'pz' }); P.cyl(0.06, 0.06, fh, 6, 0x777777, 'METAL', t, fh / 2, c); }
         else { G.fence.box(c, 0, t, c, fh, e, { us: 3, vs: 3, faces: 'px' }); P.cyl(0.06, 0.06, fh, 6, 0x777777, 'METAL', c, fh / 2, t); }
       }
-      if (axis === 'x') W.addC(a, 0, c - 0.1, b, fh, c + 0.1, { surf: 'metal' }); else W.addC(c - 0.1, 0, a, c + 0.1, fh, b, { surf: 'metal' });
+      if (axis === 'x') W.addC(a, 0, c - 0.1, b, fh, c + 0.1, { surf: 'metal', see: true }); else W.addC(c - 0.1, 0, a, c + 0.1, fh, b, { surf: 'metal', see: true });
     }
     // giriş kulübesi
     building(-162, 124, -156, 130, 3.4, 'office', { noRoofProps: true });
@@ -1258,6 +1260,10 @@
       }
     }
     // yağmur kamerayı izler
+    if (W.env.weather === 'rain' && cam) {
+      W._roofT = (W._roofT || 0) - dt;
+      if (W._roofT <= 0) { W._roofT = 0.3; const h = W.raycast(cam.position.x, cam.position.y + 0.2, cam.position.z, 0, 1, 0, 40); W.rainHidden = !!h; W.rain.visible = !W.rainHidden; K.audio.setLoop('rain', W.rainHidden ? 0.12 : 0.35); }
+    }
     if (W.rain.visible && cam) {
       const pos = W.rain.geometry.attributes.position, a = pos.array;
       const fall = 26 * dt;
@@ -1302,6 +1308,7 @@
   };
   // Etkileşim için en uygun nesne
   W.bestInteract = function (actor, fwdX, fwdZ) {
+    if (K.cam && K.cam.mode === 'foot' && actor === K.game.player) { fwdX = Math.sin(K.cam.yaw); fwdZ = Math.cos(K.cam.yaw); }
     let best = null, bs = Infinity;
     for (const it of W.interactables) {
       if (it.enabled && !it.enabled()) continue;

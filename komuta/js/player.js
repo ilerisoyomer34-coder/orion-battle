@@ -139,7 +139,7 @@
       this.items = new Set(); this.aiming = false; this.zoomed = false; this.sprinting = false;
       this.reloadT = -1; this.swapT = -1; this.interactHold = 0; this.holdTarget = null; this.nvg = false;
       this.spreadBloom = 0; this.everDrew = false; this.lastSafePos = this.pos.clone();
-      this.regenT = 0; this.drone = null; this.actionT = 0;
+      this.regenT = 0; this.drone = null; this.actionT = 0; this.fireT = -1;
     }
     get w() { return this.weapons[this.wi]; }
     setWeaponIdx(i, silent) {

@@ -1,5 +1,5 @@
 /* KOMUTA — çevrimdışı önbellek */
-const CACHE = 'komuta-v1';
+const CACHE = 'komuta-v2';
 const ASSETS = [
   './', './index.html', './manifest.json', './css/style.css', './lib/three.min.js',
   './js/core.js', './js/textures.js', './js/models.js', './js/vehmodels.js', './js/world.js', './js/nav.js',

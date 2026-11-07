@@ -337,6 +337,7 @@
       this.surrendered = false; this.arrested = false; this.knocked = false;
       this.leader = !!o.leader; this.noShoot = !!o.noShoot; this.canSurrender = o.canSurrender !== false;
       this.alertedOnce = false; this.seesBody = false; this.dialogue = o.dialogue;
+      this.dmgOut = K.game.diffDmg || 0.7;
       this.anim.armed = true;
       if (this.faction === 'security') this.anim.armed = false;
     }

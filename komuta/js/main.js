@@ -123,7 +123,7 @@
       if (f && f.cut) { f.cut = false; f.mesh.visible = true; f.col.door.locked = true; f.col.on = true; f.col.cells = []; K.world.colliders.push(f.col); (function ins(c) { const C = K.world.CELL; for (let ix = Math.floor(c.min.x / C); ix <= Math.floor(c.max.x / C); ix++) for (let iz = Math.floor(c.min.z / C); iz <= Math.floor(c.max.z / C); iz++) { const k = (ix + 1024) * 4096 + (iz + 1024); let a = K.world.hash.get(k); if (!a) { a = []; K.world.hash.set(k, a); } a.push(c); c.cells.push(k); } })(f.col); }
       K.ui.closeWheel(); K.ui.closeMap(); if (K.ui.dialogOpen) K.ui.closeDialog(); if (K.ui.keypadOpen) K.ui.closeKeypad();
       if (K.ui.journalOpen) K.ui.toggleJournal();
-      K.ui.letterbox(false); this.cinematic = false; document.body.classList.remove('cine');
+      K.ui.letterbox(false); this.cinematic = false; document.body.classList.remove('cine'); $('titleCard').classList.remove('show');
       K.renderer.domElement.style.filter = ''; K.ui._nv = false; $('nvg').classList.remove('show');
       K.audio.setLoop('engine', 0); K.audio.setLoop('rotor', 0);
     },
@@ -165,6 +165,7 @@
       const idx = K.MISSIONS.filter((m) => !m.pack).indexOf(def);
       this.diffAcc = idx < 0 ? 1 : idx < 3 ? 0.82 : idx < 6 ? 0.95 : 1.08;
       this.diffRate = idx < 0 ? 1 : idx < 3 ? 0.85 : idx < 6 ? 1 : 1.1;
+      this.diffDmg = idx < 0 ? 0.7 : idx < 3 ? 0.6 : idx < 6 ? 0.68 : 0.75;
       K.world.setEnv(def.time, def.weather);
       // oyuncu
       const ins = def.insertion;
@@ -268,7 +269,7 @@
     },
     findInteraction() {
       const P = this.player; if (!P || !P.alive || P.downed || P.vehicle || P.drone) return null;
-      const f = P.fwd(), cands = [];
+      const f = K.cam.mode === 'foot' ? { x: Math.sin(K.cam.yaw), z: Math.cos(K.cam.yaw) } : P.fwd(), cands = [];
       const consider = (x, z, y, r, o) => {
         const dx = x - P.pos.x, dz = z - P.pos.z, d = Math.hypot(dx, dz);
         if (d > r || Math.abs((y != null ? y : P.pos.y + 1) - (P.pos.y + 1)) > 1.7) return;
