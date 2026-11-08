@@ -11,7 +11,17 @@
       this.tl = new THREE.TextureLoader();
     },
     loadGLB(url) {
-      if (!this.cache[url]) this.cache[url] = new Promise((res, rej) => this.loader.load(url, res, undefined, rej));
+      if (!this.cache[url]) {
+        // .glb.json: GLB baytları base64 olarak JSON içinde (yalnız JSON sunan barındırmalar için paketleme)
+        if (/\.glb\.json$/.test(url)) {
+          const base = url.slice(0, url.lastIndexOf('/') + 1);
+          this.cache[url] = fetch(url).then((r) => { if (!r.ok) throw new Error(url + ' ' + r.status); return r.json(); }).then((j) => {
+            const bin = atob(j.glb), buf = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+            return new Promise((res, rej) => this.loader.parse(buf.buffer, base, res, rej));
+          });
+        } else this.cache[url] = new Promise((res, rej) => this.loader.load(url, res, undefined, rej));
+      }
       return this.cache[url];
     },
     texture(url, srgb) {
