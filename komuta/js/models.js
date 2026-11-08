@@ -174,9 +174,24 @@
   const CIV_TOPS = [0x8a2d2d, 0x2d5a8a, 0x3d6b3d, 0xb0883a, 0x6b4a7a, 0x555a60, 0xc7c2b6, 0x2f6a6a, 0x7a5232, 0x1f2f4f, 0xa04a2a];
   const CIV_PANTS = [0x2a3040, 0x3a3a3a, 0x50463a, 0x1f2430, 0x6a6255, 0x2b2b2b];
   const HAIRS = [0x1b120c, 0x2b1e15, 0x4a3524, 0x6a5a48, 0x8a8a8a, 0x15100c];
-  M.civLook = function (r = Math.random) {
+  // Sketchfab sivil modelleri (K.ASSETDATA.characters içinde civ: 'm' | 'f')
+  M.civGLB = function (gender, r = Math.random) {
+    if (!K.assets || !K.assets.chars) return null;
+    const C = K.ASSETDATA.characters, ids = Object.keys(C).filter((id) => C[id].civ && K.assets.chars[id] && (!gender || C[id].civ === gender) && !C[id].special);
+    return ids.length ? ids[Math.floor(r() * ids.length)] : null;
+  };
+  M.civLook = function (r = Math.random, gender) {
     const pick = (a) => a[Math.floor(r() * a.length)];
-    return { uniform: pick(CIV_TOPS), region: 'FABRIC', pants: pick(CIV_PANTS), hair: pick(HAIRS), boots: pick([0x1a1612, 0x3a2a1a, 0x222222, 0x5a5a5a]), skin: pick(SKINS), jacket: r() < 0.35, shirt: pick([0xe8e4dc, 0xbfc8d4, 0x333333]), bald: r() < 0.12 };
+    const L = { uniform: pick(CIV_TOPS), region: 'FABRIC', pants: pick(CIV_PANTS), hair: pick(HAIRS), boots: pick([0x1a1612, 0x3a2a1a, 0x222222, 0x5a5a5a]), skin: pick(SKINS), jacket: r() < 0.35, shirt: pick([0xe8e4dc, 0xbfc8d4, 0x333333]), bald: r() < 0.12 };
+    const g = M.civGLB(gender, r); if (g) L.glb = g;
+    return L;
+  };
+  // görünümü modele bağla (yükleme sonrası): ajan, patron, sivil kılıklı oyuncu
+  M.bindCivLooks = function () {
+    const C = K.ASSETDATA.characters, has = (id) => C[id] && K.assets.chars[id];
+    if (has('civ_eric')) M.LOOKS.boss.glb = 'civ_eric';
+    if (has('civ_nathan')) M.LOOKS.playerCivil.glb = 'civ_nathan';
+    if (has('civ_bizman')) M.LOOKS.agent.glb = 'civ_bizman';
   };
 
   // ───────── İskelet oluşturma ─────────

@@ -38,8 +38,78 @@
     return out;
   }
 
+  // ───────── Sketchfab GLB araçları ─────────
+  // K.ASSETDATA.world.vehicles[tür] = [{ file, node, rotY, len, wheels: RegExp kaynağı, steerFront, turret, barrel, hatch, skip, head, tint }]
+  const _bb = new THREE.Box3(), _c3 = new THREE.Vector3();
+  function vehGLB(type, color) {
+    const D = K.ASSETDATA.world && K.ASSETDATA.world.vehicles && K.ASSETDATA.world.vehicles[type];
+    if (!D || !K.wa || !K.wa.scenes) return null;
+    const list = Array.isArray(D) ? D : [D];
+    const def = list[Math.abs(((color || 0) * 2654435761) >>> 0) % list.length];
+    const sc = K.wa.scenes[def.file]; if (!sc) return null;
+    const src = def.node ? sc.getObjectByName(def.node) : sc; if (!src) return null;
+    const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
+    const wrap = new THREE.Group(), model = src.clone(true);
+    model.position.set(0, 0, 0); model.quaternion.identity(); model.scale.set(1, 1, 1);
+    wrap.add(model); wrap.rotation.y = def.rotY || 0; body.add(wrap);
+    if (def.skip) { const re = new RegExp(def.skip, 'i'); const kill = []; model.traverse((o) => { if (o !== model && re.test(o.name)) kill.push(o); }); for (const o of kill) o.parent && o.parent.remove(o); }
+    // ölçek ve taban
+    root.updateMatrixWorld(true);
+    _bb.setFromObject(wrap);
+    const s = def.len / Math.max(0.01, _bb.max.z - _bb.min.z);
+    wrap.scale.setScalar(s); root.updateMatrixWorld(true); _bb.setFromObject(wrap);
+    wrap.position.set(-(_bb.min.x + _bb.max.x) / 2, -_bb.min.y + (def.lift || 0), -(_bb.min.z + _bb.max.z) / 2);
+    root.updateMatrixWorld(true);
+    model.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; if (def.tint && color !== undefined && def.tintMat && new RegExp(def.tintMat, 'i').test(o.material.name)) { o.material = o.material.clone(); o.material.color.set(color); } } });
+    // tekerlekler: ayrı düğümleri merkezlerinde dönen gruplara taşı
+    const wheels = [];
+    if (def.wheels) {
+      const re = new RegExp(def.wheels, 'i'), found = [];
+      model.traverse((o) => { if (o !== model && re.test(o.name) && !found.some((f) => { for (let p = o.parent; p; p = p.parent) if (p === f) return true; return false; })) found.push(o); });
+      for (const o of found) {
+        _bb.setFromObject(o); if (_bb.isEmpty()) continue;
+        _bb.getCenter(_c3); root.worldToLocal(_c3);
+        const r = (_bb.max.y - _bb.min.y) / 2;
+        const g = new THREE.Group(), spin = new THREE.Group(); g.position.copy(_c3); g.add(spin); root.add(g);
+        root.updateMatrixWorld(true); spin.attach(o);
+        const front = _c3.z > 0;
+        wheels.push({ g, spin, steer: def.steerFront !== false && front && !def.noSteer, r: Math.max(0.2, r), baseY: _c3.y, x: _c3.x, z: _c3.z });
+      }
+    }
+    const out = { root, body, wheels, glb: true };
+    // tank: taret, namlu
+    if (def.turret) {
+      const tn = model.getObjectByName(def.turret), bn = def.barrel ? model.getObjectByName(def.barrel) : null;
+      const turret = new THREE.Group(), barrel = new THREE.Group(), hatch = new THREE.Group(), muzzle = new THREE.Object3D();
+      if (tn) { _bb.setFromObject(tn); _bb.getCenter(_c3); body.worldToLocal(_c3); turret.position.set(_c3.x, _bb.min.y - root.position.y + 0.02, _c3.z + (def.turretZ || 0)); }
+      body.add(turret); root.updateMatrixWorld(true);
+      if (tn) turret.attach(tn);
+      if (bn) {
+        _bb.setFromObject(bn); const bmin = _bb.min.clone(), bmax = _bb.max.clone(); _bb.getCenter(_c3);
+        const p = new THREE.Vector3(_c3.x, _c3.y, bmin.z + (def.trunnion || 0.3)); turret.worldToLocal(p);
+        barrel.position.copy(p); turret.add(barrel); root.updateMatrixWorld(true); barrel.attach(bn);
+        const tip = new THREE.Vector3(_c3.x, _c3.y, bmax.z); barrel.worldToLocal(tip); muzzle.position.copy(tip);
+      } else { barrel.position.set(0, 0.45, 2.1); turret.add(barrel); muzzle.position.set(0, 0, 5.3); }
+      barrel.add(muzzle); turret.add(hatch);
+      Object.assign(out, { turret, barrel, hatch, muzzle, tracks: null });
+    }
+    // farlar (gece): küçük ışık kutuları
+    _bb.setFromObject(wrap);
+    const hz = _bb.max.z - 0.02, tzz = _bb.min.z + 0.02, hy = def.headY !== undefined ? def.headY : (_bb.max.y - _bb.min.y) * 0.42, hx = (_bb.max.x - _bb.min.x) * 0.34;
+    const LP = new Parts();
+    LP.box(0.26, 0.1, 0.03, 0xfff4da, 'FLAT', hx, hy, hz); LP.box(0.26, 0.1, 0.03, 0xfff4da, 'FLAT', -hx, hy, hz);
+    LP.box(0.24, 0.1, 0.03, 0xff2a20, 'FLAT', hx, hy, tzz); LP.box(0.24, 0.1, 0.03, 0xff2a20, 'FLAT', -hx, hy, tzz);
+    if (def.siren) { LP.box(0.4, 0.12, 0.25, 0x3060ff, 'FLAT', 0.3, _bb.max.y + 0.02, def.siren); LP.box(0.4, 0.12, 0.25, 0xff2020, 'FLAT', -0.3, _bb.max.y + 0.02, def.siren); }
+    const Lm = lightMesh(LP, body);
+    Object.assign(out, { lights: Lm.mesh, lightMat: Lm.mat, len: def.len, headPos: [[hx, hy, hz + 0.1], [-hx, hy, hz + 0.1]] });
+    return finish(out);
+  }
+  M.vehGLB = vehGLB;
+  const tryGLB = (type, color) => { try { return vehGLB(type, color); } catch (e) { console.warn('GLB araç kurulamadı', type, e); return null; } };
+
   // ───────── 4x4 zırhlı devriye ─────────
   M.veh4x4 = function (C = 0x5f644b) {
+    { const g = tryGLB('patrol', C); if (g) return g; }
     const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
     const P = new Parts(), D = 0x2a2c2a, G = 0x16202a;
     P.box(2.2, 0.7, 5.0, C, 'CAMO', 0, 0.98, 0);
@@ -77,6 +147,7 @@
 
   // ───────── 8x8 zırhlı personel taşıyıcı ─────────
   M.vehAPC = function (C = 0x5b6047) {
+    { const g = tryGLB('apc', C); if (g) return g; }
     const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
     const P = new Parts(), D = 0x2b2d2a, G = 0x16202a;
     P.box(2.8, 1.3, 7.0, C, 'CAMO', 0, 1.55, -0.2);
@@ -114,6 +185,7 @@
 
   // ───────── Ana muharebe tankı ─────────
   M.vehTank = function (C = 0x5a5e44) {
+    { const g = tryGLB('tank', C); if (g) return g; }
     const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
     const P = new Parts(), D = 0x2c2d28;
     P.box(3.0, 0.9, 6.8, C, 'CAMO', 0, 1.15, 0);
@@ -260,6 +332,7 @@
 
   // ───────── TIR çekici + dorse (kurgusal Siyah Akrep Lojistik) ─────────
   M.vehTruck = function (C = 0x5a1219) {
+    { const g = tryGLB('truck', C); if (g) return g; }
     const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
     const P = new Parts(), D = 0x1d1d1f, CH = 0xb8bcc0, G = 0x101820;
     P.box(2.0, 0.4, 7.0, D, 'METAL', 0, 0.85, -0.6);
@@ -309,6 +382,7 @@
 
   // ───────── Sivil araçlar ─────────
   M.vehCar = function (kind = 'sedan', C = 0x8a8f96) {
+    { const g = tryGLB(kind, C); if (g) return g; }
     const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
     const P = new Parts(), G = 0x141c24, D = 0x1a1a1a;
     let wl, len, wr = 0.34, head;

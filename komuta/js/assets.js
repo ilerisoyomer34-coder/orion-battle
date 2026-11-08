@@ -92,7 +92,12 @@
       const seen = new Set();
       const add = (what, c, change) => { if (!c) return; const k = c.source || c.title; if (seen.has(k + what)) return; seen.add(k + what); out.push({ what, title: c.title, author: c.author, license: c.license, source: c.source, change }); };
       const D = K.ASSETDATA;
-      for (const id in D.characters) add(id === 'soldier' ? 'Düşman askerleri' : 'Tim askerleri (Demir, Kaya, Yıldız)', D.characters[id].credit, 'Üç asker ayrıldı, T pozuna getirildi, sadeleştirildi (call-of-duty projesi); oyunda kemikler prosedürel animasyonla sürülür');
+      for (const id in D.characters) {
+        const c = D.characters[id];
+        if (c.civ) add('Sivil: ' + (c.label || id), c.credit, 'Sadeleştirildi, dokular küçültüldü (WebP), boy 1,75 m\'ye ölçeklendi; kemikler oyunun prosedürel animasyonuyla sürülür');
+        else add(id === 'soldier' ? 'Düşman askerleri' : 'Tim askerleri (Demir, Kaya, Yıldız)', c.credit, 'Üç asker ayrıldı, T pozuna getirildi, sadeleştirildi (call-of-duty projesi); oyunda kemikler prosedürel animasyonla sürülür');
+      }
+      if (D.world && D.world.credits) for (const k in D.world.credits) { const c = D.world.credits[k]; add(c.what || k, c, c.change || 'Dokular küçültüldü (WebP), ağlar nicemlendi; oyunda ölçeklenip birleştirilerek yerleştirildi'); }
       add('Nakliye helikopteri', D.heli.credit, 'Sadeleştirildi, pervaneler ayrıldı, gövde askerî yeşile boyandı');
       for (const id in D.weapons) {
         const W = Object.values(K.WEAPONS).find((w) => w.asset === id);

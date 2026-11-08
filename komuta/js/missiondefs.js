@@ -51,9 +51,9 @@
       const w = W(), D = w.officeDoors;
       const code = M.code4(); D.archive.code = code; M.flags.code = code;
       const shelf = Math.floor(Math.random() * 3); M.flags.shelf = shelf;
-      const rec = M.civ({ x: 0, z: -48.3, yaw: 0, name: 'Resepsiyonist Ayşe', look: Object.assign(K.models.civLook(), { uniform: 0x2a3550, jacket: true }), state: 'idle' });
+      const rec = M.civ({ x: 0, z: -48.3, yaw: 0, name: 'Resepsiyonist Ayşe', look: Object.assign(K.models.civLook(Math.random, 'f'), { uniform: 0x2a3550, jacket: true }), state: 'idle' });
       const emp = M.civ({ x: -25.5, z: -46.5, yaw: Math.PI / 2, name: 'Çalışan Bora', state: 'idle', pose: 'talk' });
-      const sec = M.civ({ x: 21, z: -46.85, yaw: 0, name: 'Sekreter Selin', state: 'idle', pose: 'sit', look: Object.assign(K.models.civLook(), { uniform: 0x6a2a3a }) });
+      const sec = M.civ({ x: 21, z: -46.85, yaw: 0, name: 'Sekreter Selin', state: 'idle', pose: 'sit', look: Object.assign(K.models.civLook(Math.random, 'f'), { uniform: 0x6a2a3a }) });
       M.sec = sec; M.secPlan = { phase: 'desk', t: 30 };
       for (const i of [0, 2, 5, 7, 9, 10, 13, 15]) { const d = w.officeDesks[i]; M.civ({ x: d.x, z: d.z + 0.82, yaw: Math.PI, state: 'idle', pose: 'sit', name: 'Çalışan' }); }
       M.enemy({ x: 3.4, z: -51.3, yaw: 0, lookId: 'guard', faction: 'security', weapon: null, range: 15, name: 'Güvenlik Necati' });
@@ -162,7 +162,7 @@
       { id: 's3', text: 'Muhbiri tehdit etmeden bilgi al', type: 'check', fn: (M) => M.flags.informant && !M.flags.threat },
     ],
     setup(M) {
-      const leyla = M.leyla = M.vip({ x: -189.2, z: -147.2, yaw: Math.PI / 2, name: 'Ajan Leyla', look: Object.assign({}, L('agent'), { uniform: 0x7a2a2a, hair: 0x3a2214 }) });
+      const leyla = M.leyla = M.vip({ x: -189.2, z: -147.2, yaw: Math.PI / 2, name: 'Ajan Leyla', look: Object.assign({}, L('agent'), { uniform: 0x7a2a2a, hair: 0x3a2214, glb: K.models.civGLB('f', () => 0.4) || undefined }) });
       leyla.downed = true; leyla.hp = 1; leyla.anim.pose = 'downed'; leyla.injured = true; leyla.followAfterRevive = true; leyla.hideMarker = true;
       const hasan = M.civ({ x: -150, z: -97.0, yaw: Math.PI, name: 'Seyyar Hasan', state: 'idle', panicImmune: true });
       hasan.dialogue = () => M.talk(hasan, { start: M.flags.informant ? 'done' : 'a', nodes: {
@@ -180,7 +180,7 @@
       for (let i = 0; i < 6; i++) { const p = K.nav.randomFreeNear(0, -150, -60, 40); if (p) { const c = M.civ({ x: p.x, z: p.z, state: 'wander', ambient: true }); c.wanderR = 14; } }
       M.item({ id: 'm02_bandage', name: 'Kanlı bandaj', desc: 'Ajan yaralı ve hareket ettirilmiş.', x: -211.5, z: -57.5, mesh: 'bag' });
       M.item({ id: 'm02_phone', name: 'Kırık telefon', desc: 'Son mesaj: "Güvenli ev — kuyulu avlunun batısı".', x: -116.5, z: -184, mesh: 'bag' });
-      M.civ({ x: -127.5, z: -150, yaw: -Math.PI / 2, name: 'Yaşlı kadın', state: 'idle', pose: 'talk', look: Object.assign(K.models.civLook(), { hair: 0x9a9a9a, uniform: 0x3a3048 }) });
+      M.civ({ x: -127.5, z: -150, yaw: -Math.PI / 2, name: 'Yaşlı kadın', state: 'idle', pose: 'talk', look: Object.assign(K.models.civLook(Math.random, 'f'), { hair: 0x9a9a9a, uniform: 0x3a3048 }) });
       const g = (x, z, o = {}) => { const p = snap(x, z); return M.enemy(Object.assign({ x: p.x, z: p.z, accuracy: 0.45, range: 24 }, o)); };
       g(-186, -135.6, { yaw: 0 }); g(-181, -135.6, { yaw: 0.3 });
       g(-178.5, -144.5, { yaw: Math.PI / 2 });
@@ -532,7 +532,7 @@
       const g = (x, z, o = {}) => { const p = snap(x, z); return M.enemy(Object.assign({ x: p.x, z: p.z, accuracy: 0.52, range: 34 }, o)); };
       for (const [x, z] of [[196, 140], [205, 142], [192, 146]]) g(x, z, { yaw: Math.PI });
       for (const [x, z] of [[134, 170], [128, 182], [142, 186], [120, 172], [150, 168], [138, 194], [110, 186], [156, 180]]) g(x, z, { tags: ['yard'], lookId: Math.random() < 0.3 ? 'enemyHeavy' : 'enemy', yaw: Math.random() * 6 });
-      for (const [x, z] of [[230, 210], [226, 160], [180, 236], [100, 236]]) M.civ({ x, z, name: 'Liman işçisi', state: 'wander', look: Object.assign(K.models.civLook(), { uniform: 0xd87a20, cap: 0xe8c020 }) });
+      for (const [x, z] of [[230, 210], [226, 160], [180, 236], [100, 236]]) M.civ({ x, z, name: 'Liman işçisi', state: 'wander', look: Object.assign(K.models.civLook(Math.random, 'm'), { uniform: 0xd87a20, cap: 0xe8c020 }) });
       M.tir = M.veh('truck', { x: 230, z: 40, yaw: 0, team: 'mafia' });
       M.tir.onDamaged = (n, src) => { if (src && src.vehicle && src.vehicle.type === 'tank') M.flags.tirTankHit = true; if (M.tir.hp < M.tir.maxHp * 0.42 && !M.flags.tirStopped) { M.tir.hp = Math.max(M.tir.hp, 1); M.tir.invuln = true; M.tir.ai = null; M.tir.input.t = 0; M.tir.input.hb = true; M.setFlag('tirStopped'); K.ui.toast('TIR durduruldu — motor devre dışı', 'ok'); M.evidence.push('m09_cargo'); } };
       M.tirStarted = false;
@@ -580,7 +580,7 @@
       const witness = K.save.data.rescued.includes('leyla');
       M.witness = witness;
       if (witness) {
-        M.leyla = M.vip({ x: -2, z: -46, name: 'Ajan Leyla', look: Object.assign({}, L('agent'), { uniform: 0x7a2a2a, hair: 0x3a2214 }), state: 'idle', panicImmune: true });
+        M.leyla = M.vip({ x: -2, z: -46, name: 'Ajan Leyla', look: Object.assign({}, L('agent'), { uniform: 0x7a2a2a, hair: 0x3a2214, glb: K.models.civGLB('f', () => 0.4) || undefined }), state: 'idle', panicImmune: true });
         M.leyla.dialogue = () => M.talk(M.leyla, { start: 'a', nodes: { a: { text: 'Komutanım! Baron\'a karşı ifade vermeye hazırım. Beni araca götürün.', choices: [{ t: 'Arkamdan gel.', next: null, do: () => M.leyla.setLeader(G().player) }] } } });
       } else {
         M.after(1, () => { M.complete('o2'); M.radio('Komuta', 'Kurtarılmış tanık yok — dava delillere dayanacak.'); });
@@ -765,7 +765,7 @@
       { id: 's3', text: 'Tüm tanıkları dinlemeden suçlama yapma', type: 'check', fn: (M) => !M.flags.rushed },
     ],
     setup(M) {
-      const w1 = M.civ({ x: -127.1, z: -62, yaw: Math.PI / 2, name: 'Garson Murat', state: 'idle', pose: 'talk', look: Object.assign(K.models.civLook(), { uniform: 0xe8e4dc, pants: 0x1a1a1a }) });
+      const w1 = M.civ({ x: -127.1, z: -62, yaw: Math.PI / 2, name: 'Garson Murat', state: 'idle', pose: 'talk', look: Object.assign(K.models.civLook(Math.random, 'm'), { uniform: 0xe8e4dc, pants: 0x1a1a1a }) });
       const w2 = M.civ({ x: -118.9, z: -53, yaw: -Math.PI / 2, name: 'Seyyar satıcı Cemil', state: 'idle', pose: 'sit' });
       const w3 = M.civ({ x: -109.1, z: -62, yaw: -Math.PI / 2, name: 'Taksici Oğuz', state: 'idle', pose: 'sit' });
       M.ws = [w1, w2, w3];

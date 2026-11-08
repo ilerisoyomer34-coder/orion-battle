@@ -18,11 +18,14 @@
       K.assets.init();
       await step(0.1, 'Asker modelleri yükleniyor');
       await K.assets.loadCharacters((p, id) => { bar.style.width = Math.round((0.1 + p * 0.06) * 100) + '%'; txt.textContent = 'Asker modelleri yükleniyor (' + Math.round(p * 100) + '%)'; });
+      K.models.bindCivLooks();
       await step(0.16, 'Helikopter modeli yükleniyor');
       await K.assets.loadHeli();
+      await step(0.17, 'Şehir modelleri yükleniyor (Sketchfab)');
+      await K.wa.load((p) => { bar.style.width = Math.round((0.17 + p * 0.08) * 100) + '%'; txt.textContent = 'Şehir modelleri yükleniyor (' + Math.round(p * 100) + '%)'; });
       K.assets.preloadWeapons(['kr4', 'pistol_s']);
       K.bus.on('weaponAssetReady', (asset) => this.refreshWeaponModels(asset));
-      await step(0.18, 'Şehir inşa ediliyor');
+      await step(0.25, 'Şehir inşa ediliyor');
       this.scene = new THREE.Scene();
       this.dyn = new THREE.Group(); this.scene.add(this.dyn);
       const hemi = new THREE.HemisphereLight(0xbcd4ec, 0x5a5448, 0.9); this.scene.add(hemi); K.world.hemi = hemi;
@@ -32,7 +35,7 @@
       sun.shadow.camera.near = 10; sun.shadow.camera.far = 420; sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.04;
       this.scene.add(sun); this.scene.add(sun.target); K.world.sun = sun;
       await new Promise((res) => setTimeout(res, 10));
-      K.world.build(this.scene, (p, t) => { bar.style.width = Math.round((0.18 + p * 0.55) * 100) + '%'; txt.textContent = t; });
+      K.world.build(this.scene, (p, t) => { bar.style.width = Math.round((0.25 + p * 0.48) * 100) + '%'; txt.textContent = t; });
       await step(0.75, 'Navigasyon ızgarası hesaplanıyor');
       K.nav.build();
       await step(0.88, 'Harita ve efektler');

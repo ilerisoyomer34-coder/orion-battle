@@ -290,6 +290,7 @@
     W.G = G; W.FG = FG;
     const P = new M.Parts();   // birleşik sahne eşyaları
     W.P = P;
+    if (K.wa.enabled) { K.wa.wrapProps(); K.wa.capture = true; }
     const lampPts = [];
 
     // düzlükler (dağ üssü, kamp, iniş alanları)
@@ -386,7 +387,28 @@
     ];
 
     // ── Bina yardımcıları
+    // sokağa bakan kenar: en yakın yol çizgisine göre
+    function frontSide(x0, z0, x1, z1) {
+      const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
+      let best = 1e9, side = 'pz';
+      for (const [rz, a, b] of H) { if (cx < a - 20 || cx > b + 20) continue; const d = Math.min(Math.abs(rz - z0), Math.abs(rz - z1)); if (d < best) { best = d; side = rz > cz ? 'pz' : 'nz'; } }
+      for (const [rx, a, b] of V) { if (cz < a - 20 || cz > b + 20) continue; const d = Math.min(Math.abs(rx - x0), Math.abs(rx - x1)); if (d < best) { best = d; side = rx > cx ? 'px' : 'nx'; } }
+      return side;
+    }
+    const WA = K.wa;
+    const GLB_STYLE = { glass: 'glass', office: 'office', old: 'old', old2: 'old', apt: 'apt', ind: 'ind', shack: 'shack' };
     function building(x0, z0, x1, z1, h, style, o = {}) {
+      // Sketchfab bina seti varsa cephe yerine onu yerleştir (çarpıştırıcı kutu olarak kalır)
+      if (WA.enabled && !o.proc) {
+        const st = (h < 7.5 && (style === 'old' || style === 'old2') && WA.list('building', 'shack').length) ? 'shack' : GLB_STYLE[style] || style;
+        const plan = WA.planBuilding(x0, z0, x1, z1, h, st, rnd, o.front || frontSide(x0, z0, x1, z1));
+        if (plan) {
+          for (const p of plan.pieces) WA.put(p.id, p.x, 0, p.z, p.ry, p.sx, p.sy, p.sz);
+          if (o.collider !== false) addC(x0, 0, z0, x1, Math.max(3, plan.h), z1, { surf: style === 'ind' ? 'metal' : 'concrete' });
+          W.glbBuildings = (W.glbBuildings || 0) + 1;
+          return;
+        }
+      }
       const fg = FG[style] || FG.office;
       fg.box(x0, 0, z0, x1, h, z1, { us: 14, vs: 13.2, faces: 'pxnxpznz', uo: o.uo || 0 });
       G.concrete.box(x0 - 0.15, 0, z0 - 0.15, x1 + 0.15, 0.6, z1 + 0.15, { us: 4, faces: 'pxnxpznz' });
@@ -776,6 +798,8 @@
     add(G.dirt, mm.dirt, false); add(G.lane, mm.lane, false); add(G.laneY, mm.laneY, false); add(G.fence, mm.fence, false);
     for (const k in FG) add(FG[k], W.facadeMats[k]);
     const pm = P.mesh(M.matProp, true); for (const c of W.chunkify(pm)) scene.add(c);
+    if (WA.enabled) { WA.build(scene); }
+    WA.capture = false;
     // lamba parıltıları
     {
       const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(lampPts, 3));

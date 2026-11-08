@@ -37,14 +37,73 @@
     root.traverse((o) => { if (o.isBone || o.type === 'Bone' || ORDER.includes(o.name) || /Hand(Index|Middle|Ring|Pinky|Thumb)\d/.test(o.name)) if (!B[o.name]) B[o.name] = o; });
     return B;
   }
+  // Farklı iskelet adlandırmalarını (Mixamo önekli, UE/Renderpeople, Blender .L/.R) Mixamo adlarına çevir
+  const ALIAS = {
+    pelvis: 'Hips', hips: 'Hips', hip: 'Hips', spine: 'Spine', spine01: 'Spine', spine1: 'Spine1', spine02: 'Spine1', spine2: 'Spine2', spine03: 'Spine2', chest: 'Spine2', upperchest: 'Spine2',
+    neck: 'Neck', neck01: 'Neck', head: 'Head',
+    claviclel: 'LeftShoulder', shoulderl: 'LeftShoulder', leftshoulder: 'LeftShoulder', upperarml: 'LeftArm', leftarm: 'LeftArm', lowerarml: 'LeftForeArm', forearml: 'LeftForeArm', leftforearm: 'LeftForeArm', handl: 'LeftHand', lefthand: 'LeftHand',
+    clavicler: 'RightShoulder', shoulderr: 'RightShoulder', rightshoulder: 'RightShoulder', upperarmr: 'RightArm', rightarm: 'RightArm', lowerarmr: 'RightForeArm', forearmr: 'RightForeArm', rightforearm: 'RightForeArm', handr: 'RightHand', righthand: 'RightHand',
+    thighl: 'LeftUpLeg', upperlegl: 'LeftUpLeg', leftupleg: 'LeftUpLeg', calfl: 'LeftLeg', lowerlegl: 'LeftLeg', shinl: 'LeftLeg', leftleg: 'LeftLeg', footl: 'LeftFoot', leftfoot: 'LeftFoot', balll: 'LeftToeBase', toel: 'LeftToeBase', toesl: 'LeftToeBase', lefttoebase: 'LeftToeBase',
+    thighr: 'RightUpLeg', upperlegr: 'RightUpLeg', rightupleg: 'RightUpLeg', calfr: 'RightLeg', lowerlegr: 'RightLeg', shinr: 'RightLeg', rightleg: 'RightLeg', footr: 'RightFoot', rightfoot: 'RightFoot', ballr: 'RightToeBase', toer: 'RightToeBase', toesr: 'RightToeBase', righttoebase: 'RightToeBase',
+  };
+  const FING = { index: 'Index', middle: 'Middle', ring: 'Ring', pinky: 'Pinky', little: 'Pinky', thumb: 'Thumb' };
+  function canonName(n) {
+    let s = n.replace(/^mixamorig\d*[:_]?/i, '').replace(/^(rp_[a-z0-9]+_[a-z0-9]+_\d+_|bip0?1[_ ]?|def[-_]|character\d*[:_])/i, '');
+    if (ORDER.includes(s) || /^(Left|Right)Hand(Index|Middle|Ring|Pinky|Thumb)\d$/.test(s)) return s;
+    const k = s.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (ALIAS[k]) return ALIAS[k];
+    // parmaklar: index_01_l, Index1.L, finger_index_1_r …
+    const m = s.toLowerCase().match(/(index|middle|ring|pinky|little|thumb)[^0-9]*0?(\d)[^a-z]*(l|r|left|right)\b/) || s.toLowerCase().match(/(l|r|left|right)[^a-z]+(index|middle|ring|pinky|little|thumb)[^0-9]*0?(\d)/);
+    if (m) {
+      const side = /^(l|left)$/.test(m[3] || m[1]) ? 'Left' : 'Right', f = FING[m[1]] || FING[m[2]], i = m[2] && /\d/.test(m[2]) ? m[2] : m[3];
+      if (f && i) return side + 'Hand' + f + i;
+    }
+    return null;
+  }
+  function canonicalize(root) {
+    const seen = new Set();
+    root.traverse((o) => { if (!o.isBone) return; const c = canonName(o.name); if (c && !seen.has(c)) { seen.add(c); o.name = c; } });
+  }
+  // A pozunda bağlanmış modelleri T pozuna getir (kol yatay, bacak dik)
+  function toTPose(B, scene) {
+    const la = B.LeftArm.getWorldPosition(new V3()), ra = B.RightArm.getWorldPosition(new V3());
+    const outL = new V3(la.x - ra.x, 0, la.z - ra.z).normalize(), down = new V3(0, -1, 0);
+    const fix = (bone, child, want) => {
+      if (!bone || !child) return;
+      const p0 = bone.getWorldPosition(new V3()), p1 = child.getWorldPosition(new V3());
+      const cur = p1.sub(p0); if (cur.lengthSq() < 1e-8) return; cur.normalize();
+      if (cur.angleTo(want) < 0.14) return;
+      const q = new Q().setFromUnitVectors(cur, want);
+      const wq = bone.getWorldQuaternion(new Q()), pq = bone.parent.getWorldQuaternion(new Q());
+      bone.quaternion.copy(pq.invert().multiply(q.multiply(wq)));
+      scene.updateMatrixWorld(true);
+    };
+    for (const [s, out] of [['Left', outL], ['Right', outL.clone().negate()]]) {
+      fix(B[s + 'Arm'], B[s + 'ForeArm'], out);
+      fix(B[s + 'ForeArm'], B[s + 'Hand'], out);
+      fix(B[s + 'Hand'], B[s + 'HandMiddle1'], out);
+      fix(B[s + 'UpLeg'], B[s + 'Leg'], down);
+      fix(B[s + 'Leg'], B[s + 'Foot'], down);
+    }
+  }
 
   GC.prepare = function (entry) {
+    const D = entry.data || {};
+    const stretch = D.armStretch !== undefined ? D.armStretch : ARM_STRETCH;
     const prepOne = (scene) => {
+      if (D.height) {
+        // boyu metreye ölçekle (cm birimli veya farklı boyutlu modeller)
+        scene.scale.setScalar(1); scene.updateMatrixWorld(true);
+        const bb = new THREE.Box3().setFromObject(scene), h = bb.max.y - bb.min.y;
+        if (h > 0.01) scene.scale.setScalar(D.height / h);
+      }
+      canonicalize(scene);
       scene.updateMatrixWorld(true);
       const B = collectBones(scene);
       if (!B.Hips || !B.LeftArm || !B.LeftUpLeg) throw new Error('Beklenen kemikler yok');
+      if (D.tpose) toTPose(B, scene);
       // kolları uzat (şablonda: klonlar devralır)
-      for (const s of ['Left', 'Right']) { B[s + 'ForeArm'].position.multiplyScalar(ARM_STRETCH); B[s + 'Hand'].position.multiplyScalar(ARM_STRETCH); }
+      if (stretch !== 1) for (const s of ['Left', 'Right']) { B[s + 'ForeArm'].position.multiplyScalar(stretch); B[s + 'Hand'].position.multiplyScalar(stretch); }
       scene.updateMatrixWorld(true);
       return B;
     };
@@ -166,7 +225,8 @@
     // 1) dönüşleri aktar
     for (const n of ORDER) {
       const b = B[n]; if (!b) continue;
-      const parentW = n === 'Hips' ? _pw : I.W[b.parent.name];
+      let parentW = n === 'Hips' ? _pw : I.W[b.parent.name];
+      if (!parentW) { b.parent.updateWorldMatrix(true, false); parentW = b.parent.getWorldQuaternion(_tw); }
       const tw = I.W[n];
       if (MAP[n]) tw.copy(_myQ[MAP[n]]).multiply(P.offset[n]);
       else tw.copy(parentW).multiply(P.bindLocal[n]);
