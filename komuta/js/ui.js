@@ -131,11 +131,17 @@
       const it = G.interaction;
       const pr = $('prompt');
       if (it && !this.dialogOpen) {
-        set('promptTxt', (K.save.data.settings.touch === 'on' || this.touchActive ? '' : '[E] ') + it.label + (it.hold ? ' (basılı tut)' : ''));
+        set('promptTxt', (K.save.data.settings.touch === 'on' || this.touchActive ? '' : '[E] ') + it.label + (this.touchActive ? (it.hold ? ' — E veya üstüne basılı tut' : ' — E veya üstüne basılı tut') : (it.hold ? ' (basılı tut)' : '')));
         pr.classList.add('show');
         const f = G.holdProg || 0;
         $('promptRing').style.background = f > 0 ? `conic-gradient(#d4874a ${f * 360}deg, rgba(255,255,255,0.12) 0)` : 'rgba(255,255,255,0.12)';
       } else pr.classList.remove('show');
+      // ekranda basılı tutma halkası
+      const hr = $('holdRing'), tp = G.touchPick;
+      if (hr) {
+        if (tp) { hr.style.left = tp.sx + 'px'; hr.style.top = tp.sy + 'px'; hr.classList.add('show'); const f = it ? G.holdProg || 0 : 0; hr.style.background = `conic-gradient(#d4874a ${f * 360}deg, rgba(255,255,255,0.18) 0)`; }
+        else hr.classList.remove('show');
+      }
       // ekip paneli
       this.renderSquad();
       // NVG
@@ -772,7 +778,30 @@
       const end = (e) => { for (const t of e.changedTouches) { if (t.identifier === jid) { jid = null; knob.style.transform = ''; I.touch.mx = 0; I.touch.my = 0; I.vrelease('T_sprint'); } if (t.identifier === lid) lid = null; } };
       window.addEventListener('touchend', end); window.addEventListener('touchcancel', end);
       const look = $('tlook'); let lid = null, lp = null, lp0 = null;
-      look.addEventListener('touchstart', (e) => { const t = e.changedTouches[0]; lid = t.identifier; lp = { x: t.clientX, y: t.clientY }; lp0 = lp; K.audio.init(); e.preventDefault(); }, { passive: false });
+      // basılı tutma: parmak bir kişinin/eşyanın üstünde ~0,35 sn kıpırdamadan kalırsa hedef seçilir, halka dolunca alınır/konuşulur
+      let lpTimer = null, pickId = null, pick0 = null, pickCur = null;
+      const cancelPick = () => { pickId = null; if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; } if (K.game.touchPick) { K.game.touchPick = null; K.game.holdProg = 0; } };
+      look.addEventListener('touchstart', (e) => {
+        const t = e.changedTouches[0]; lid = t.identifier; lp = { x: t.clientX, y: t.clientY }; lp0 = lp; K.audio.init(); e.preventDefault();
+        startPick(t);
+      }, { passive: false });
+      // ekranın sol boş kısmı (joystick dışı) için de basılı tutma
+      $('c').addEventListener('touchstart', (e) => { const t = e.changedTouches[0]; if (t) startPick(t); }, { passive: true });
+      function startPick(t) {
+        cancelPick();
+        if (K.game.state !== 'playing' || !K.game.canControl()) return;
+        const sx = t.clientX, sy = t.clientY;
+        pickId = t.identifier; pick0 = { x: sx, y: sy }; pickCur = { x: sx, y: sy };
+        lpTimer = setTimeout(() => {
+          lpTimer = null;
+          if (pickId === null || Math.hypot(pickCur.x - sx, pickCur.y - sy) > 16) return;
+          const tg = K.game.pickAt(sx, sy);
+          if (tg) { K.game.touchPick = { sx, sy, focus: { x: tg.x, z: tg.z }, warned: false }; K.game.holdProg = 0; }
+        }, 350);
+      }
+      window.addEventListener('touchmove', (e) => { for (const t of e.changedTouches) if (pickId !== null && t.identifier === pickId) { pickCur = { x: t.clientX, y: t.clientY }; if (Math.hypot(t.clientX - pick0.x, t.clientY - pick0.y) > (K.game.touchPick ? 40 : 16)) cancelPick(); } }, { passive: true });
+      window.addEventListener('touchend', (e) => { for (const t of e.changedTouches) if (t.identifier === pickId) cancelPick(); });
+      window.addEventListener('touchcancel', cancelPick);
       T.querySelectorAll('[data-k]').forEach((b) => {
         const k = b.dataset.k, toggle = b.dataset.toggle;
         b.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); K.audio.init(); if (toggle) { if (I.keys.has(k)) I.vrelease(k); else I.vpress(k); b.classList.toggle('on', I.keys.has(k)); } else { I.vpress(k); b.classList.add('on'); } if (k === 'T_fire' || k === 'T_aim') { lid = e.changedTouches[0].identifier; lp = { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY }; } }, { passive: false });

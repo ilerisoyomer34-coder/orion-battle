@@ -1339,8 +1339,8 @@
     W._lampT = 0;
   };
   // Etkileşim için en uygun nesne
-  W.bestInteract = function (actor, fwdX, fwdZ) {
-    if (K.cam && K.cam.mode === 'foot' && actor === K.game.player) { fwdX = Math.sin(K.cam.yaw); fwdZ = Math.cos(K.cam.yaw); }
+  W.bestInteract = function (actor, fwdX, fwdZ, focus) {
+    if (!focus && K.cam && K.cam.mode === 'foot' && actor === K.game.player) { fwdX = Math.sin(K.cam.yaw); fwdZ = Math.cos(K.cam.yaw); }
     let best = null, bs = Infinity;
     for (const it of W.interactables) {
       if (it.enabled && !it.enabled()) continue;
@@ -1350,7 +1350,7 @@
       if (d > (it.r || 1.8) || Math.abs(dy) > 1.6) continue;
       const dot = d > 0.3 ? (dx * fwdX + dz * fwdZ) / d : 1;
       if (dot < 0.1) continue;
-      const s = d - dot * 0.8;
+      const s = d - dot * 0.8 - (focus && Math.hypot(it.x - focus.x, it.z - focus.z) < 1.2 ? 3 : 0);
       if (s < bs) { bs = s; best = it; }
     }
     return best;

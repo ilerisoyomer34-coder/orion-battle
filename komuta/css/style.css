@@ -170,7 +170,7 @@ button:disabled { opacity: .35; cursor: default; }
 .vrow span { width: 28px; font-size: 11px; text-align: right; }
 #vitals.low .vbar.hp i { background: var(--red); animation: pulse 0.8s infinite; }
 @keyframes pulse { 50% { opacity: .45; } }
-#hint { position: absolute; top: 150px; left: 18px; max-width: 330px; background: rgba(15,23,36,0.9); border: 1px solid var(--amber); padding: 10px 12px; font-size: 12px; line-height: 1.5; opacity: 0; transform: translateX(-20px); transition: all .3s; pointer-events: auto; }
+#hint { position: absolute; top: 150px; left: 18px; max-width: 330px; background: rgba(15,23,36,0.9); border: 1px solid var(--amber); padding: 10px 12px; font-size: 12px; line-height: 1.5; opacity: 0; transform: translateX(-20px); transition: all .3s; pointer-events: none; }
 #hint.show { opacity: 1; transform: none; } #hint b { color: var(--amber); margin-right: 6px; } #hint .x { float: right; margin-left: 8px; cursor: pointer; color: var(--muted); }
 #objective { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); text-align: center; min-width: 300px; max-width: 46vw; }
 #objMain div { font-size: 14px; font-weight: 600; letter-spacing: .03em; background: rgba(15,23,36,0.6); padding: 5px 14px; margin-bottom: 3px; border-bottom: 2px solid var(--amber); }
@@ -359,3 +359,7 @@ body.touchmode #touch { top: env(safe-area-inset-top, 0px); right: env(safe-area
 body.touchmode #hud { left: env(safe-area-inset-left, 0px); right: env(safe-area-inset-right, 0px); }
 #glLost { position: fixed; inset: 0; z-index: 9997; background: rgba(5,10,18,0.9); display: flex; align-items: center; justify-content: center; padding: 16px; } #glLost.hidden { display: none; } #glLost p { margin: 8px 0 14px; color: var(--muted); }
 #btnFree.on { border-color: var(--amber); color: var(--amber2); }
+#holdRing { position: fixed; width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 50%; pointer-events: none; opacity: 0; transition: opacity .12s; z-index: 11;
+  -webkit-mask: radial-gradient(circle, transparent 23px, #000 24px); mask: radial-gradient(circle, transparent 23px, #000 24px); }
+#holdRing.show { opacity: 1; }
+#hint.show .x { pointer-events: auto; padding: 4px 8px; margin: -4px -8px 0 8px; }

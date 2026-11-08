@@ -305,15 +305,19 @@
       for (const it of K.world.interactables) { if (it.enabled && !it.enabled()) continue; if (it.door && !it.door.locked && false) continue; const d = Math.hypot(it.x - pt.x, it.z - pt.z) + Math.abs((it.y || 1) - (pt.y || 1)) * 0.3; if (d < bd) { bd = d; best = it; } }
       return best;
     },
-    findInteraction() {
+    // focus: ekranda basılı tutulan hedefin konumu (dokunmatik); verilirse o hedefe yakın aday seçilir
+    findInteraction(focus) {
       const P = this.player; if (!P || !P.alive || P.downed || P.vehicle || P.drone) return null;
-      const f = K.cam.mode === 'foot' ? { x: Math.sin(K.cam.yaw), z: Math.cos(K.cam.yaw) } : P.fwd(), cands = [];
+      let f = K.cam.mode === 'foot' ? { x: Math.sin(K.cam.yaw), z: Math.cos(K.cam.yaw) } : P.fwd();
+      if (focus) { const dx = focus.x - P.pos.x, dz = focus.z - P.pos.z, l = Math.hypot(dx, dz) || 1; f = { x: dx / l, z: dz / l }; }
+      const cands = [];
+      const near = (x, z) => (focus && Math.hypot(x - focus.x, z - focus.z) < 1.2 ? 3 : 0);
       const consider = (x, z, y, r, o) => {
         const dx = x - P.pos.x, dz = z - P.pos.z, d = Math.hypot(dx, dz);
         if (d > r || Math.abs((y != null ? y : P.pos.y + 1) - (P.pos.y + 1)) > 1.7) return;
         const dot = d > 0.3 ? (dx * f.x + dz * f.z) / d : 1;
         if (dot < -0.2) return;
-        cands.push(Object.assign({ s: d - dot * 0.9 }, o));
+        cands.push(Object.assign({ s: d - dot * 0.9 - near(x, z), px: x, pz: z }, o));
       };
       // araçlar
       for (const v of this.vehicles) {
@@ -328,7 +332,7 @@
         }
         if (v.type === 'tank' && !K.prog.vehicleUnlocked('tank') && !(K.mission.def && K.mission.def.id === 'm09')) { cands.push({ s: 1.6, label: `${v.name}: Tuğgeneral rütbesi gerekli`, use: () => K.ui.toast('Tank kullanımı Tuğgeneral rütbesinde açılır', 'bad') }); continue; }
         const driverFree = !v.seats[0].actor;
-        cands.push({ s: 1.2, label: driverFree ? `${v.name}: sürücü olarak bin` : `${v.name}: yolcu olarak bin`, use: () => this.enterVehicle(v, driverFree ? 'driver' : 'passenger') });
+        cands.push({ s: 1.2 - near(v.pos.x, v.pos.z), px: v.pos.x, pz: v.pos.z, label: driverFree ? `${v.name}: sürücü olarak bin` : `${v.name}: yolcu olarak bin`, use: () => this.enterVehicle(v, driverFree ? 'driver' : 'passenger') });
       }
       for (const a of this.actors) {
         if (a === P || !a.alive || a.vehicle) continue;
@@ -358,11 +362,27 @@
         cands.push({ s: -1, label: can ? `${ta.name || 'Şüpheli'}: "TESLİM OL!"` : `${ta.name || 'Şüpheli'} çatışmada — teslim olmaz (yarala veya sersemlet)`, use: () => { if (can) ta.surrender(); else K.audio.ui('bad'); } });
       }
       // dünya etkileşimleri
-      const wi = K.world.bestInteract(P, f.x, f.z);
-      if (wi) { const dx = wi.x - P.pos.x, dz = wi.z - P.pos.z, d = Math.hypot(dx, dz); const dot = d > 0.3 ? (dx * f.x + dz * f.z) / d : 1; cands.push({ s: d - dot * 0.8 + (wi.door ? 0.4 : 0), label: typeof wi.label === 'function' ? wi.label() : wi.label, hold: wi.hold || 0, use: () => wi.use(P), key: wi.id }); }
+      const wi = K.world.bestInteract(P, f.x, f.z, focus);
+      if (wi) { const dx = wi.x - P.pos.x, dz = wi.z - P.pos.z, d = Math.hypot(dx, dz); const dot = d > 0.3 ? (dx * f.x + dz * f.z) / d : 1; cands.push({ px: wi.x, pz: wi.z, s: d - dot * 0.8 + (wi.door ? 0.4 : 0) - near(wi.x, wi.z), label: typeof wi.label === 'function' ? wi.label() : wi.label, hold: wi.hold || 0, use: () => wi.use(P), key: wi.id }); }
       if (!cands.length) return null;
       cands.sort((a, b) => a.s - b.s);
       return cands[0];
+    },
+    // ekrandaki bir noktaya en yakın etkileşim hedefi (kişi, eşya/terminal/kapı, araç)
+    pickAt(sx, sy) {
+      const P = this.player, cam = this.camera; if (!P) return null;
+      const Wd = window.innerWidth, Hd = window.innerHeight, v = new THREE.Vector3();
+      let best = null, bd = 90 * 90;
+      const test = (x, y, z, kind) => {
+        v.set(x, y, z).project(cam); if (v.z > 1 || v.z < -1) return;
+        const d2 = ((v.x + 1) / 2 * Wd - sx) ** 2 + ((1 - v.y) / 2 * Hd - sy) ** 2;
+        if (Math.hypot(x - P.pos.x, z - P.pos.z) > 30) return;
+        if (d2 < bd) { bd = d2; best = { x, z, kind }; }
+      };
+      for (const a of this.actors) if (a !== P && a.alive && !a.vehicle && !a.removed) { test(a.pos.x, a.pos.y + 1.2, a.pos.z, 'actor'); test(a.pos.x, a.pos.y + 0.5, a.pos.z, 'actor'); }
+      for (const it of K.world.interactables) if ((!it.enabled || it.enabled()) && (it.layer || 0) === (P.layer || 0)) test(it.x, it.y != null ? it.y : P.pos.y + 1, it.z, 'item');
+      for (const vv of this.vehicles) if (vv.alive && !vv.traffic) test(vv.pos.x, vv.pos.y + 1.2, vv.pos.z, 'vehicle');
+      return best;
     },
     enterVehicle(v, pref) {
       const P = this.player;
@@ -487,10 +507,21 @@
       }
       // ── etkileşim
       if (P && this.canControl() && !UI.wheelOpen) {
-        const it = this.findInteraction();
+        const tp = this.touchPick;
+        let it = this.findInteraction(tp ? tp.focus : null);
+        // basılı tutulan hedef erişimde değilse (aday hedefin yanında değil) uyar
+        if (tp && (!it || it.px === undefined || Math.hypot(it.px - tp.focus.x, it.pz - tp.focus.z) > 1.5)) {
+          if (!tp.warned) { tp.warned = true; K.ui.toast(it ? 'Yaklaş — hedefe 2 metreden yakın ol' : 'Yaklaş — bu hedefle etkileşim için yanına git'); }
+          it = null;
+        }
         if (!it || !this.interaction || it.label !== this.interaction.label) this.holdProg = 0;
         this.interaction = it;
-        if (it) {
+        if (it && tp) {
+          // ekranda basılı tutma: kısa olanlar ~0,45 sn, uzun olanlar kendi süreleri
+          const T = Math.max(0.45, (it.hold || 0) * (1 - 0.25 * K.prog.skillVal('evidence')));
+          this.holdProg += dt / T; P.actionT = 0.2; P.actionPose = it.pose || 'interact';
+          if (this.holdProg >= 1) { this.holdProg = 0; it.use(); this.interaction = null; this.touchPick = null; K.pwa.buzz(25); }
+        } else if (it) {
           if (it.hold) {
             if (I.down('interact')) {
               this.holdProg += dt / (it.hold * (1 - 0.25 * K.prog.skillVal('evidence')));
