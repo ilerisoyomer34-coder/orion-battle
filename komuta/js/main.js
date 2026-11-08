@@ -111,7 +111,7 @@
     pause() { if (this.state !== 'playing') return; this.paused = true; K.input.releaseAll(); K.ui.screen('pause'); },
     resume() { this.paused = false; K.ui.screen(null); this.relock(); },
     wantsPointerLock() { return this.state === 'playing' && !this.paused && !K.ui.dialogOpen && !K.ui.keypadOpen && !K.ui.mapOpen && !K.ui.modal && !K.input.touch.enabled; },
-    relock() { if (this.wantsPointerLock()) { const c = $('c'); try { const p = c.requestPointerLock && c.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch (e) { /* kullanıcı tıklaması gerekir */ } } },
+    relock() { if (this.wantsPointerLock() && !K.input.noLock) { const c = $('c'); try { const p = c.requestPointerLock && c.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch (e) { /* kullanıcı tıklaması gerekir */ } } },
     canControl() { return this.state === 'playing' && !this.paused && !this.cinematic && !K.ui.dialogOpen && !K.ui.keypadOpen && !K.ui.mapOpen && !K.ui.modal; },
     // ═════════ Varlıklar ═════════
     spawnEnemy(o) { const e = new K.Enemy(o); this.actors.push(e); this.enemies.push(e); return e; },

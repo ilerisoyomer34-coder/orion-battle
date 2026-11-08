@@ -120,19 +120,21 @@ window.K = window.K || {};
       window.addEventListener('blur', () => { this.keys.clear(); this.mb = [false, false, false]; });
       canvas.addEventListener('mousedown', (e) => {
         K.audio.init();
-        if (K.game && K.game.wantsPointerLock() && !this.locked && !this.touch.enabled) {
-          canvas.requestPointerLock && canvas.requestPointerLock();
+        if (K.game && K.game.wantsPointerLock() && !this.locked && !this.touch.enabled && !this.noLock) {
+          try { const p = canvas.requestPointerLock && canvas.requestPointerLock(); if (p && p.catch) p.catch(() => { this.noLock = true; }); } catch (err) { this.noLock = true; }
         }
         this.mb[e.button] = true; this.mbHit[e.button] = true;
         if (e.button === 1) e.preventDefault();
       });
       window.addEventListener('mouseup', (e) => { this.mb[e.button] = false; this.mbUp[e.button] = true; });
       window.addEventListener('mousemove', (e) => {
-        if (this.locked) { this.mdx += e.movementX || 0; this.mdy += e.movementY || 0; }
+        // fare kilidi yoksa (gömülü sayfa) imleç hareketiyle bak
+        if (this.locked || (this.noLock && K.game && K.game.wantsPointerLock())) { this.mdx += e.movementX || 0; this.mdy += e.movementY || 0; }
         this.mouseX = e.clientX; this.mouseY = e.clientY;
       });
       window.addEventListener('wheel', (e) => { this.wheel += Math.sign(e.deltaY); }, { passive: true });
       canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+      document.addEventListener('pointerlockerror', () => { this.noLock = true; });
       document.addEventListener('pointerlockchange', () => {
         this.locked = document.pointerLockElement === canvas;
         if (!this.locked) { this.mb = [false, false, false]; K.bus.emit('pointerunlock'); }
