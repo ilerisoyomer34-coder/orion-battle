@@ -1273,6 +1273,7 @@
   const _tmpV = new THREE.Vector3();
   W.update = function (dt, cam, focus) {
     if (K.wa.cullList && cam) K.wa.update(dt, cam.position);
+    if (cam && W.sky.scale.x < 1) W.sky.position.set(cam.position.x, 0, cam.position.z);   // küçük kubbe kamerayı izler
     // kapılar
     for (const d of W.doors) {
       if (d.auto) {

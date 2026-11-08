@@ -176,6 +176,44 @@
     return { wrap, B, hipsParent: B.Hips.parent, W: w, fingers: prep.fingers };
   }
 
+  // ── Birinci şahıs: modelden yalnız kol/el üçgenlerini tutan kopya (ağırlığı en çok kol kemiklerine düşen köşeler)
+  const ARM_RE = /^(Left|Right)(Arm|ForeArm|Hand)/;
+  function armsTemplate(e) {
+    if (e.armsT) return e.armsT;
+    const c = THREE.SkeletonUtils.clone(e.scene);
+    c.traverse((o) => {
+      if (!o.isMesh) return;
+      if (!o.isSkinnedMesh) { o.visible = false; return; }
+      const g = o.geometry, si = g.attributes.skinIndex, sw = g.attributes.skinWeight, bones = o.skeleton.bones;
+      if (!si || !sw) { o.visible = false; return; }
+      const n = si.count, keep = new Uint8Array(n);
+      for (let v = 0; v < n; v++) {
+        const ws = [sw.getX(v), sw.getY(v), sw.getZ(v), sw.getW(v)], is = [si.getX(v), si.getY(v), si.getZ(v), si.getW(v)];
+        let arm = 0, all = 0;
+        for (let k = 0; k < 4; k++) { all += ws[k]; const b = bones[is[k]]; if (b && ARM_RE.test(b.name)) arm += ws[k]; }
+        keep[v] = all > 0 && arm / all > 0.5 ? 1 : 0;
+      }
+      const I = g.index, cnt = I ? I.count : n, out = [];
+      for (let t = 0; t < cnt; t += 3) {
+        const a = I ? I.getX(t) : t, b = I ? I.getX(t + 1) : t + 1, d = I ? I.getX(t + 2) : t + 2;
+        if (keep[a] && keep[b] && keep[d]) out.push(a, b, d);
+      }
+      const ng = new THREE.BufferGeometry();
+      for (const k in g.attributes) ng.setAttribute(k, g.attributes[k]);
+      ng.setIndex(out); ng.groups = []; ng.boundingSphere = g.boundingSphere; ng.boundingBox = g.boundingBox;
+      o.geometry = ng;
+    });
+    e.armsT = c;
+    return c;
+  }
+  GC.addArms = function (actor) {
+    const g = actor.glb; if (!g || g.arms) return;
+    try {
+      g.arms = makeInstance(armsTemplate(g.e), g.prep, null);
+      g.arms.wrap.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; } });
+    } catch (err) { console.warn('Birinci şahıs kolları kurulamadı', err); g.arms = null; }
+  };
+
   // Aktöre GLB model bağla; prosedürel gövde ağları gizlenir, silah ve kalkan görünür kalır
   GC.attach = function (actor, id, opts = {}) {
     const e = K.assets.chars[id]; if (!e || !e.prep) return false;
@@ -224,10 +262,13 @@
     const g = actor.glb, R = actor.rig, P = g.prep;
     // uzak model (LOD)
     const cam = K.cam && K.cam.camera;
-    if (g.lod && cam) {
-      const lodD = GC.lodDist || (GC.lodDist = K.game && K.game.qualityLevel && K.game.qualityLevel() === 'low' ? 18 : 34);
-      const far = cam.position.distanceToSquared(actor.pos) > lodD * lodD;
-      const want = far ? g.lod : g.full;
+    {
+      let want = g.full;
+      if (actor.fp && g.arms) want = g.arms;
+      else if (g.lod && cam) {
+        const lodD = GC.lodDist || (GC.lodDist = K.game && K.game.qualityLevel && K.game.qualityLevel() === 'low' ? 18 : 34);
+        if (cam.position.distanceToSquared(actor.pos) > lodD * lodD) want = g.lod;
+      }
       if (want !== g.cur) { R.root.remove(g.cur.wrap); R.root.add(want.wrap); g.cur = want; }
     }
     const I = g.cur, B = I.B;
@@ -258,7 +299,16 @@
     }
     // 3) kollar: prosedürel iskeletin el noktasına IK
     const FA = R.FA || K.models.ARM.FA;
+    const fpArms = actor.fp && R.fpOn && R.fpR;
     for (const [side, el] of [['Left', R.elL], ['Right', R.elR]]) {
+      if (fpArms) {
+        // birinci şahıs: avuç doğrudan kabzaya / el kundağına; dirsek aşağı ve dışa
+        R.gun.parent.localToWorld(_T.copy(side === 'Left' ? R.fpL : R.fpR));
+        R.root.getWorldQuaternion(_q3);
+        _v3.set(side === 'Left' ? 0.35 : -0.35, -0.45, -0.05).applyQuaternion(_q3).add(_T);
+        ikArm(I, side, _T, _v3);
+        continue;
+      }
       el.localToWorld(_T.set(0, -FA, 0));
       el.getWorldPosition(_v3);
       // dirsek yönü için kutup: prosedürel dirsek biraz dışa/aşağı uzatılmış

@@ -61,6 +61,12 @@
       r.outputColorSpace = THREE.SRGBColorSpace;
       r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
       K.renderer = r;
+      r.domElement.addEventListener('webglcontextlost', (e) => {
+        e.preventDefault(); this.ctxLost = true;
+        const o = $('glLost'); if (o) o.classList.remove('hidden');
+        try { if (K.save.data.settings.quality !== 'low') { K.save.data.settings.quality = 'low'; K.save.write(); } } catch (err) { /* kayıt yok */ }
+      });
+      r.domElement.addEventListener('webglcontextrestored', () => { this.ctxLost = false; const o = $('glLost'); if (o) o.classList.add('hidden'); });
       this.camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.15, 2600);
       this.resize();
     },
@@ -76,12 +82,17 @@
       const sun = K.world.sun;
       if (sun) { const size = q === 'high' ? 2048 : 1024; r.shadowMap.enabled = q !== 'low'; sun.castShadow = q !== 'low'; if (sun.shadow.mapSize.x !== size) { sun.shadow.mapSize.set(size, size); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } } }
       this.camera.far = q === 'low' ? 900 : 2600; this.camera.updateProjectionMatrix();
+      if (K.world.sky) K.world.sky.scale.setScalar(Math.min(1, this.camera.far * 0.85 / 1800));
       K.world.setLampLightCount && K.world.setLampLightCount(q === 'high' ? 6 : q === 'med' ? 4 : 2);
       this.charShadows = q === 'high' ? 45 : q === 'med' ? 25 : 0;
       this.resize();
     },
     resize() {
-      const w = window.innerWidth, h = window.innerHeight;
+      // gömülü görüntüleyicilerde açılışta boyut 0 olabilir: kamerayı bozma, sonraki karede tekrar dene
+      const c = K.renderer.domElement;
+      const w = window.innerWidth || c.clientWidth || document.documentElement.clientWidth, h = window.innerHeight || c.clientHeight || document.documentElement.clientHeight;
+      if (!(w > 0 && h > 0)) { this._sz = null; return; }
+      this._sz = w + 'x' + h;
       K.renderer.setSize(w, h, false);
       this.camera.aspect = w / h; this.camera.updateProjectionMatrix();
       if (K.fx.sparks) K.fx.setScale(K.renderer.domElement.height, this.camera.fov);
@@ -402,6 +413,8 @@
       if (!(dt > 0)) dt = 0.016;
       dt = Math.min(dt, 0.05);
       this.fps = this.fps * 0.95 + (1 / Math.max(dt, 0.001)) * 0.05;
+      // pencere/çerçeve boyutu olay gelmeden değişmiş olabilir (iOS uygulama görüntüleyicisi)
+      if (this._sz !== (window.innerWidth + 'x' + window.innerHeight)) this.resize();
       try {
         if (this.state === 'playing') this.updatePlaying(dt);
         else this.updateAmbient(dt);

@@ -21,6 +21,12 @@ python3 -m http.server 8000
 GitHub Pages açıksa oyun `https://<kullanıcı>.github.io/orion-battle/komuta/` adresinden oynanır. Oyun bir PWA'dır: telefonda "Ana ekrana ekle" ile tam ekran ve çevrimdışı çalışır.
 
 
+### Kamera ve görevler
+
+- **Birinci şahıs (varsayılan):** Karakterin gövdesi görünmez; yalnızca kolları ve silahı görülür. Silah hazırda sağ altta durur, nişan alınca (sağ tık / NİŞAN) gez ekranın ortasına gelir. Yürürken sallanma, ateşte geri tepme, şarjör değiştirme ve koşu hareketleri vardır. **V** (dokunmatikte V düğmesi) üçüncü şahısa geçirir; Ayarlar → Kamera'dan da seçilir. Araç kullanırken kamera üçüncü şahıstır.
+- **Çatışma görevleri (Ç-1…Ç-4):** Merkezde en üstte, baştan açık. Silahlı başlar, konuşma veya bulmaca yoktur: Eski şehirde iki meydanı temizle; limanı al ve gelen dalgalara karşı savun; sanayi deposunda komutanı etkisiz hâle getir; batı mahallelerinde rehineleri kurtar. Yeni kampanya Ç-1 ile başlar.
+- **Görev 01:** Sivil kılık artık zorunlu değil; alarm verilmesi görevi bitirmez.
+
 ### Telefona uygulama olarak kurma (PWA)
 
 Oyun bir PWA'dır: ana ekrana eklenince tam ekran, yatay ve tarayıcı çubuğu olmadan açılır. Açılışta yüklenen modeller cihazda saklanır; sonraki açılışlar hızlıdır ve internet olmadan da oynanır.

@@ -20,13 +20,133 @@
 
   const LIST = K.MISSIONS = [];
 
+  // ════════════════════════════════════════════════ ÇATIŞMA GÖREVLERİ (doğrudan aksiyon)
+  // Silahlı başlar, konuşma/bulmaca yok: bölgeyi temizle, savun, kurtar, tahliye noktasına git.
+  const foe = (M, x, z, o = {}) => { const p = snap(x, z); return M.enemy(Object.assign({ x: p.x, z: p.z, accuracy: 0.42, range: 32, yaw: Math.random() * 6.28 }, o)); };
+  const ring = (cx, cz, r, n) => Array.from({ length: n }, (_, i) => [cx + Math.cos(i / n * 6.283) * r * (0.6 + 0.4 * ((i * 7) % 3) / 2), cz + Math.sin(i / n * 6.283) * r * (0.6 + 0.4 * ((i * 5) % 3) / 2)]);
+  const combatBase = { pack: true, combat: true, rank: 0, stealth: false, squadMax: 4, outfit: 'tactical', recommend: 'Taarruz tüfeği veya hafif makineli; 2–4 kişilik ekip.' };
+
+  LIST.push(Object.assign({}, combatBase, {
+    id: 'c1', no: 'Ç-1', title: 'ESKİ ŞEHİR ÇATIŞMASI', place: 'Eski şehir — çarşı ve avlu', type: 'Bölge temizleme', time: 'day', weather: 'clear', par: 420,
+    brief: 'Siyah Akrep militanları eski şehir çarşısını ele geçirdi. Çarşı meydanını temizle, ardından avludaki ikinci grubu etkisiz hâle getir ve tahliye noktasına dön.',
+    risks: ['Dar sokaklarda yakın mesafe çatışması.', 'Çatı ve köşe arkalarında saklanan militanlar.'],
+    unlockText: 'Hızlı aksiyon görevi',
+    insertion: { type: 'walk', x: -76, z: -88, yaw: -Math.PI / 2 },
+    objectives: [
+      { id: 'o1', text: 'Çarşı meydanını temizle', type: 'eliminate', group: 'market', at: { x: -150, z: -100 } },
+      { id: 'o2', text: 'Avludaki militanları etkisiz hâle getir', type: 'eliminate', group: 'yard', after: 'o1', at: { x: -130, z: -150 } },
+      { id: 'o3', text: 'Tahliye noktasına dön', type: 'reach', who: 'player', zone: C(-76, -88, 7), after: 'o2' },
+    ],
+    side: [
+      { id: 's1', text: 'Sivil kayıp olmasın', type: 'noCivLoss' },
+      { id: 's2', text: '6 dakikanın altında tamamla', type: 'time', t: 360 },
+      { id: 's3', text: 'Ekip hayatta kalsın', type: 'teamAlive' },
+    ],
+    setup(M) {
+      for (const [x, z] of ring(-150, -100, 13, 6)) foe(M, x, z, { tags: ['market'] });
+      foe(M, -118, -96, { patrol: npts([[-118, -96, 2], [-140, -86, 2]]), tags: ['market'] });
+      for (const [x, z] of ring(-130, -150, 10, 5)) foe(M, x, z, { tags: ['yard'] });
+      foe(M, -132, -152, { lookId: 'enemyHeavy', hp: 180, tags: ['yard'], accuracy: 0.5 });
+      civGroup(M, 3, -100, -98, 6, { escortable: false, tags: ['bystander'] });
+      M.hint('c1', 'Çatışma görevi: hedef işaretlerini takip et, siper alarak ilerle. Ekibine G/T/B ile takip-git-bekle emri verebilirsin.');
+    },
+  }));
+
+  LIST.push(Object.assign({}, combatBase, {
+    id: 'c2', no: 'Ç-2', title: 'LİMAN BASKINI', place: 'Liman — giriş kapısı ve konteyner sahası', type: 'Baskın ve savunma', time: 'dusk', weather: 'clear', par: 540,
+    brief: 'Limandaki silah sevkiyatını durdur. Giriş kapısındaki nöbetçileri etkisiz hâle getir, konteyner sahasını temizle ve kurtarma ekibi gelene kadar sahayı savun.',
+    risks: ['Konteyner aralarında pusu.', 'Savunma sırasında iki yönden takviye gelir.'],
+    unlockText: 'Hızlı aksiyon görevi',
+    insertion: { type: 'walk', x: 200, z: 100, yaw: 0 },
+    objectives: [
+      { id: 'o1', text: 'Liman kapısını al', type: 'eliminate', group: 'gate', at: { x: 200, z: 128 } },
+      { id: 'o2', text: 'Konteyner sahasını temizle', type: 'eliminate', group: 'yard', after: 'o1', at: { x: 134, z: 177 } },
+      { id: 'o3', text: 'Sahayı savun (kurtarma ekibi geliyor)', type: 'defend', zone: C(134, 177, 16), duration: 60, after: 'o2', failText: 'Saha düştü' },
+      { id: 'o4', text: 'Tahliye noktasına git', type: 'reach', who: 'player', zone: C(200, 100, 8), after: 'o3' },
+    ],
+    side: [
+      { id: 's1', text: '9 dakikanın altında tamamla', type: 'time', t: 540 },
+      { id: 's2', text: 'Ekip hayatta kalsın', type: 'teamAlive' },
+      { id: 's3', text: 'Ekip sağlığı %50 üzerinde', type: 'teamHealth', frac: 0.5 },
+    ],
+    setup(M) {
+      for (const [x, z] of [[194, 126], [206, 126], [200, 134], [190, 136]]) foe(M, x, z, { tags: ['gate'] });
+      foe(M, 212, 140, { patrol: npts([[212, 140, 2], [186, 140, 2]]), tags: ['gate'] });
+      for (const [x, z] of ring(134, 177, 15, 7)) foe(M, x, z, { tags: ['yard'] });
+      foe(M, 140, 172, { lookId: 'enemyHeavy', hp: 200, weapon: 'lmg', tags: ['yard'] });
+      M.wave = 0; M.waveT = 4;
+    },
+    update(M, dt) {
+      const o = M.obj('o3');
+      if (o.state === 'active' && M.wave < 3) {
+        M.waveT -= dt || 1 / 30;
+        if (M.waveT <= 0) {
+          M.wave++; M.waveT = 18;
+          M.radio('Komuta', M.wave === 1 ? 'Takviye geliyor — batıdan!' : M.wave === 2 ? 'İkinci dalga kuzeyden!' : 'Son dalga! Dayanın!');
+          const pts = M.wave === 2 ? [[150, 222], [158, 226], [142, 228]] : [[96, 182], [100, 192], [92, 172]];
+          for (const [x, z] of pts) { const e = foe(M, x, z, { accuracy: 0.4 }); e.alert(K.game.player, false); }
+        }
+      }
+    },
+  }));
+
+  LIST.push(Object.assign({}, combatBase, {
+    id: 'c3', no: 'Ç-3', title: 'SANAYİ ÇATIŞMASI', place: 'Sanayi bölgesi — depo', type: 'Baskın, hedef etkisizleştirme', time: 'day', weather: 'clear', par: 480,
+    brief: 'Siyah Akrep\'in bölge komutanı sanayi deposunda saklanıyor. Kapıdaki nöbetçileri geç, depoyu temizle ve komutanı etkisiz hâle getir.',
+    risks: ['Ağır zırhlı korumalar.', 'Depo içinde dar koridorlar.'],
+    unlockText: 'Hızlı aksiyon görevi',
+    insertion: { type: 'walk', x: 134, z: 114, yaw: Math.PI },
+    objectives: [
+      { id: 'o1', text: 'Depo kapısındaki nöbetçileri etkisiz hâle getir', type: 'eliminate', group: 'gate', at: { x: 134, z: 100 } },
+      { id: 'o2', text: 'Depoyu temizle', type: 'eliminate', group: 'inside', after: 'o1', at: { x: 135, z: 55 } },
+      { id: 'o3', text: 'Bölge komutanını etkisiz hâle getir', type: 'eliminate', group: 'boss', after: 'o1', at: { x: 153, z: 36 } },
+      { id: 'o4', text: 'Tahliye noktasına git', type: 'reach', who: 'player', zone: C(134, 114, 8), after: ['o2', 'o3'] },
+    ],
+    side: [
+      { id: 's1', text: '8 dakikanın altında tamamla', type: 'time', t: 480 },
+      { id: 's2', text: 'Ekip hayatta kalsın', type: 'teamAlive' },
+      { id: 's3', text: 'Ekip sağlığı %50 üzerinde', type: 'teamHealth', frac: 0.5 },
+    ],
+    setup(M) {
+      for (const [x, z] of [[128, 98], [140, 98], [134, 92]]) foe(M, x, z, { tags: ['gate'] });
+      for (const [x, z] of ring(135, 58, 12, 7)) foe(M, x, z, { tags: ['inside'] });
+      foe(M, 120, 50, { patrol: npts([[120, 50, 2], [150, 50, 2]]), tags: ['inside'] });
+      foe(M, 153, 36, { lookId: 'enemyHeavy', hp: 320, weapon: 'ak74', accuracy: 0.55, name: 'Bölge Komutanı', tags: ['boss'] });
+      foe(M, 149, 39, { lookId: 'enemyHeavy', hp: 180, tags: ['boss'] });
+    },
+  }));
+
+  LIST.push(Object.assign({}, combatBase, {
+    id: 'c4', no: 'Ç-4', title: 'REHİNE KURTARMA', place: 'Batı mahalleleri — gecekondu', type: 'Temizleme ve kurtarma', time: 'dusk', weather: 'clear', par: 600, civMax: 3,
+    brief: 'Militanlar batı mahallelerinde üç sivili rehin tuttu. Sokakları temizle, rehinelerin olduğu meydana ulaş, korumaları etkisiz hâle getir ve rehineleri güvenli bölgeye götür.',
+    risks: ['Rehineler çapraz ateşte kalabilir.', 'Dar sokaklarda keskin nişancı olabilir.'],
+    unlockText: 'Hızlı aksiyon görevi',
+    insertion: { type: 'walk', x: -80, z: 58, yaw: -Math.PI / 2 },
+    safeZone: C(-80, 52, 7),
+    objectives: [
+      { id: 'o1', text: 'Sokakları temizle', type: 'eliminate', group: 'street', at: { x: -150, z: 50 } },
+      { id: 'o2', text: 'Rehine korumalarını etkisiz hâle getir', type: 'eliminate', group: 'guards', after: 'o1', at: { x: -200, z: 40 } },
+      { id: 'o3', text: 'Rehineleri güvenli bölgeye götür (E ile yanına çağır)', type: 'escort', group: 'hostage', zone: C(-80, 52, 7), count: 3, after: 'o2' },
+    ],
+    side: [
+      { id: 's1', text: 'Rehinelerin hepsi hayatta', type: 'noCivLoss' },
+      { id: 's2', text: '10 dakikanın altında tamamla', type: 'time', t: 600 },
+      { id: 's3', text: 'Ekip hayatta kalsın', type: 'teamAlive' },
+    ],
+    setup(M) {
+      for (const [x, z] of [[-112, 52], [-126, 62], [-140, 44], [-156, 56], [-168, 46], [-150, 30]]) foe(M, x, z, { tags: ['street'] });
+      for (const [x, z] of ring(-200, 40, 8, 4)) foe(M, x, z, { tags: ['guards'], accuracy: 0.46 });
+      civGroup(M, 3, -202, 42, 3, { tags: ['hostage'], name: 'Rehine' });
+    },
+  }));
+
   // ════════════════════════════════════════════════ 01 · İLK EMİR
   LIST.push({
     id: 'm01', no: '01', title: 'İLK EMİR', place: 'Vertex Plaza — ofis binası', type: 'Gizli araştırma', rank: 0,
-    time: 'day', weather: 'clear', stealth: true, failOnAlarm: true, squadMax: 0, forceOutfit: 'civil', par: 480, evidenceMax: 4,
+    time: 'day', weather: 'clear', stealth: true, squadMax: 0, par: 480, evidenceMax: 4,
     brief: 'Komuta, Vertex Plaza\'daki bir şirketin kurgusal suç örgütü SİYAH AKREP\'e kara para aktardığından şüpheleniyor. Sivil kıyafetle binaya gir, konuşmalardan ipucu topla ve arşivdeki "PROJE KARANLIK" dosyasını dikkat çekmeden ele geçir.',
-    risks: ['Güvenlik görevlileri alarm verirse operasyon iptal edilir.', 'Silah çekmek çalışanlar ve güvenlik tarafından fark edilir.', 'Yetkisiz alanlarda (arşiv, müdür odası) şüphe çok hızlı yükselir.'],
-    recommend: 'Sivil görünüm. Susturuculu tabanca yalnızca acil durum için.',
+    risks: ['Alarm verilirse güvenlik ve mafya korumaları müdahale eder.', 'Silah çekmek çalışanlar ve güvenlik tarafından fark edilir.', 'Yetkisiz alanlarda (arşiv, müdür odası) şüphe çok hızlı yükselir.'],
+    recommend: 'Sivil görünüm gizlilik için kolaylık sağlar; operasyon üniformasıyla da girilebilir.',
     unlockText: 'Komuta menüsü, ilk görev puanı, Teğmen rütbesine yol',
     insertion: { type: 'walk', x: 0, z: -14, yaw: Math.PI },
     objectives: [

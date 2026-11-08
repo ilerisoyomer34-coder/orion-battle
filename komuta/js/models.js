@@ -322,6 +322,7 @@
       grip: new V3(0, GLB_OFF.y - 0.03, GLB_OFF.z), kind,
       fore: p.leftHand ? tr(p.leftHand, kind === 'pistol' ? -0.02 : -0.03) : new V3(0.05, -0.12, -0.1),
       muzzle: tr(p.muzzle || p.tip || [0, 0, -0.5]), scope: !!W.zoom,
+      sight: p.sight ? tr(p.sight) : null,
     };
     glbDefs[W.id] = def;
     return def;
@@ -369,6 +370,48 @@
     m.position.set(0.02, -0.25, 0.08); m.rotation.set(0, 0, 0);
     rig.elL.add(m); rig.shield = m;
   };
+
+  // ───────── Birinci şahıs silah duruşu: silah kameraya göre yerleştirilir (hazırda sağ alt, nişanda gez ortada)
+  const _fe = new V3(), _ff = new V3(), _fx = new V3(), _fy = new V3(), _fg = new THREE.Matrix4(), _fr = new THREE.Matrix4(), _fi = new THREE.Matrix4(), _fp = new V3(), _fq = new THREE.Quaternion(), _fs = new V3(), _fsg = new V3(), _fEu = new THREE.Euler();
+  M.fpEye = function (R, yaw, out) {
+    R.root.updateMatrixWorld(true);
+    R.neck.getWorldPosition(out);
+    out.x += Math.sin(yaw) * 0.11; out.z += Math.cos(yaw) * 0.11; out.y += 0.15;
+    return out;
+  };
+  function fpGunPose(R, st, W, isPistol) {
+    const yaw = st.fpYaw || 0, pitch = st.fpPitch || 0, sp = st.speed || 0;
+    const e = M.fpEye(R, yaw, _fe);
+    _ff.set(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch));
+    _fx.set(0, 1, 0).cross(_ff).normalize();          // +x: sol
+    _fy.copy(_ff).cross(_fx).normalize();             // +y: yukarı
+    const k = U.clamp(((st.aim || 0) - 0.78) / 0.22, 0, 1);
+    // hazır duruş (x: sol+, y: yukarı, z: ileri)
+    let ox = isPistol ? -0.13 : -0.17, oy = isPistol ? -0.17 : -0.19, oz = isPistol ? 0.32 : 0.26;
+    if (k > 0) {
+      // nişan: gez noktası bakış ekseninin hemen altında, gözün ~21 cm önünde
+      if (W.sight) _fsg.copy(W.sight); else { _fsg.copy(W.grip).lerp(W.muzzle, 0.3); _fsg.y += 0.065; }
+      ox = U.lerp(ox, -_fsg.x, k); oy = U.lerp(oy, -_fsg.y - 0.028, k); oz = U.lerp(oz, (isPistol ? 0.32 : 0.21) - _fsg.z, k);
+    }
+    // yürüme salınımı, koşu, geri tepme, şarjör
+    const mv = Math.min(1, sp / 4.5) * (1 - k * 0.8), t = R.t;
+    ox += Math.sin(t * 6.5) * 0.007 * mv; oy += -Math.abs(Math.cos(t * 6.5)) * 0.009 * mv + Math.sin(t * 1.6) * 0.002;
+    const fire = st.fire || 0, run = sp > 5.2 && k < 0.2;
+    let rx = -fire * 0.07, ry = 0, rz = 0;
+    oz -= fire * 0.03;
+    if (run) { oy -= 0.05; ox -= 0.02; ry = 0.55; rz = -0.35; rx += 0.2; }
+    if (st.reload >= 0) { const rp = Math.sin(st.reload * Math.PI); oy -= rp * 0.09; rz += rp * 0.55; rx += rp * 0.35; }
+    _fp.copy(e).addScaledVector(_fx, ox).addScaledVector(_fy, oy).addScaledVector(_ff, oz);
+    _fg.makeBasis(_fx, _fy, _ff);
+    _fg.multiply(_fr.makeRotationFromEuler(_fEu.set(rx, ry, rz)));
+    _fg.setPosition(_fp);
+    // gövde (torso) yerel uzayına çevir
+    R.gun.parent.updateMatrixWorld(true);
+    _fi.copy(R.gun.parent.matrixWorld).invert().multiply(_fg);
+    _fi.decompose(R.gun.position, R.gun.quaternion, _fs);
+    R.gunPos.copy(R.gun.position); R.gunRot.setFromQuaternion(R.gun.quaternion);
+    R.gun.updateMatrix();
+  }
 
   // ───────── 2 kemikli IK (omuz → dirsek → el) ─────────
   const DOWN = new V3(0, -1, 0);
@@ -481,10 +524,13 @@
       if (run && aim < 0.3) { rx = 0.8; ry = 0.6; gy -= 0.04; }
       gz -= fire * 0.04; rx -= fire * 0.09;
       if (st.reload >= 0) { const rp = Math.sin(st.reload * Math.PI); rz += rp * 0.5; rx += rp * 0.25; gy -= rp * 0.03; }
-      R.gunPos.x += (gx - R.gunPos.x) * kf; R.gunPos.y += (gy - R.gunPos.y) * kf; R.gunPos.z += (gz - R.gunPos.z) * kf;
-      R.gunRot.x += (rx - R.gunRot.x) * kf; R.gunRot.y += (ry - R.gunRot.y) * kf; R.gunRot.z += (rz - R.gunRot.z) * kf;
-      R.gun.position.copy(R.gunPos); R.gun.rotation.copy(R.gunRot);
-      R.gun.updateMatrix();
+      if (st.fpView) fpGunPose(R, st, W, isPistol);
+      else {
+        R.gunPos.x += (gx - R.gunPos.x) * kf; R.gunPos.y += (gy - R.gunPos.y) * kf; R.gunPos.z += (gz - R.gunPos.z) * kf;
+        R.gunRot.x += (rx - R.gunRot.x) * kf; R.gunRot.y += (ry - R.gunRot.y) * kf; R.gunRot.z += (rz - R.gunRot.z) * kf;
+        R.gun.position.copy(R.gunPos); R.gun.rotation.copy(R.gunRot);
+        R.gun.updateMatrix();
+      }
       _tR.copy(W.grip).applyMatrix4(R.gun.matrix);
       if (st.reload >= 0) {
         const t = st.reload;
@@ -500,9 +546,12 @@
       } else {
         _tL.copy(W.fore).applyMatrix4(R.gun.matrix);
       }
-      solveArm(R.shR, R.elR, _tR, POLE_R, UA, FA, kf);
-      solveArm(R.shL, R.elL, _tL, POLE_L, UA, FA, kf);
+      // birinci şahısta GLB kolları bu noktalara doğrudan IK ile uzanır (gövde yerel uzayı)
+      if (st.fpView) { (R.fpR || (R.fpR = new V3())).copy(_tR); (R.fpL || (R.fpL = new V3())).copy(_tL); R.fpOn = true; } else R.fpOn = false;
+      solveArm(R.shR, R.elR, _tR, POLE_R, UA, FA, st.fpView ? 1 : kf);
+      solveArm(R.shL, R.elL, _tL, POLE_L, UA, FA, st.fpView ? 1 : kf);
     } else {
+      R.fpOn = false;
       // silah sırtta (tüfek) veya gizli
       if (R.weapon && !isPistol) { R.gun.position.set(0.02, 0.32, -0.2); R.gun.rotation.set(0.0, Math.PI / 2, 0.85); }
       else if (R.weapon) { R.gun.position.set(-0.2, -0.12, 0.05); R.gun.rotation.set(1.5, 0, 0); }

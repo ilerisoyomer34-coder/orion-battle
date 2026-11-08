@@ -5,6 +5,7 @@
   const _v = new V3(), _v2 = new V3(), _m = new V3();
 
   // ═════════ Kamera ═════════
+  const _fpEye = new V3(), _fpSight = new V3();
   const CAM = K.cam = {
     camera: null, yaw: 0, pitch: -0.1, shoulder: 1, dist: 3.4, curDist: 3.4, fov: 70, mode: 'orbit',
     pos: new V3(), look: new V3(), shakeA: 0, pivotY: 1.6, orbitT: 0, cine: null, idleT: 0,
@@ -31,7 +32,19 @@
       const P = K.game.player, cam = this.camera;
       const s = K.save.data.settings;
       let targetFov = s.fov;
-      if (this.mode === 'foot' && P) {
+      const fpNow = this.mode === 'foot' && P && P.fp;
+      const near = fpNow ? 0.03 : 0.15;
+      if (cam.near !== near) { cam.near = near; cam.updateProjectionMatrix(); }
+      if (fpNow) {
+        this.look_(dt);
+        const f = this.forward(_v2);
+        const eye = K.models.fpEye(P.rig, this.yaw, _fpEye);
+        this.pos.copy(eye);
+        cam.position.copy(eye);
+        cam.lookAt(eye.x + f.x * 10, eye.y + f.y * 10, eye.z + f.z * 10);
+        if (P.aiming) targetFov = P.zoomed ? (P.wdef && P.wdef.zoom) || 30 : s.fov * 0.82;
+        else if (P.sprinting) targetFov = s.fov + 5;
+      } else if (this.mode === 'foot' && P) {
         this.look_(dt);
         const v = P.vehicle;
         const crouchY = P.downed ? 0.5 : P.crouched ? 1.22 : 1.62;
@@ -134,6 +147,7 @@
       add(o.secondary || 'pistol_s');
       this.wi = 0; this.holstered = this.outfit.id === 'civil';
       this.setWeaponIdx(0, true);
+      if (this.glb) K.glbChar.addArms(this);
       const g = K.GADGETS[o.gadget || 'medkit'];
       this.gadget = g ? { id: g.id, count: g.count, def: g } : null;
       this.items = new Set(); this.aiming = false; this.zoomed = false; this.sprinting = false;
@@ -142,6 +156,23 @@
       this.regenT = 0; this.drone = null; this.actionT = 0; this.fireT = -1; this.spinUp = 0;
     }
     get w() { return this.weapons[this.wi]; }
+    // birinci şahıs: yaya, araçsız, dron yok, yaralı değil ve ayar açık
+    get fp() { return K.save.data.settings.view !== 'tp' && !this.vehicle && !this.drone && !this.downed && this.alive; }
+    applyView() {
+      const fp = this.fp; if (fp === this._fpShown) return; this._fpShown = fp;
+      if (this.glb) return;   // GLB modelde kol kopyasına glbChar geçer
+      // prosedürel yedek: kollar ve silah dışındaki parçaları gizle
+      const R = this.rig, keep = new Set();
+      for (const k of ['shL', 'shR', 'gun']) if (R[k]) R[k].traverse((o) => keep.add(o));
+      R.root.traverse((o) => { if (o.isMesh && !keep.has(o)) o.visible = !fp; });
+    }
+    // nişan alırken kameranın oturacağı gez noktası (dünya)
+    sightPos(out) {
+      const R = this.rig, D = K.models.gunDef(R); if (!D || !R.gunMesh) return null;
+      if (D.sight) out.copy(D.sight); else if (D.grip && D.muzzle) { out.copy(D.grip).lerp(D.muzzle, 0.3); out.y += 0.065; } else return null;
+      R.gunMesh.updateWorldMatrix(true, false);
+      return out.applyMatrix4(R.gunMesh.matrixWorld);
+    }
     setWeaponIdx(i, silent) {
       if (!this.weapons.length) return;
       this.wi = (i + this.weapons.length) % this.weapons.length;
@@ -186,7 +217,8 @@
       if (I.hit('jump') && this.onGround && !this.crouched && G.canControl()) { this.vy = 5.6; this.onGround = false; }
       // bakış yönü
       const faceCam = this.aiming || (this.armed && (I.fire() || this.fireT > -0.4)) || this.reloadT >= 0;
-      if (faceCam) this.yaw = U.dampAng(this.yaw, camYaw, 18, dt);
+      if (this.fp) this.yaw = camYaw;           // birinci şahısta gövde bakışı izler
+      else if (faceCam) this.yaw = U.dampAng(this.yaw, camYaw, 18, dt);
       else if (ml > 0.1) this.yaw = U.dampAng(this.yaw, Math.atan2(wx, wz), 10, dt);
       this.physics(dt);
       if (this.onGround && K.world.terrainH(this.pos.x, this.pos.z) > -0.3) this.lastSafePos.copy(this.pos);
@@ -208,7 +240,7 @@
         if (I.hit('reload')) this.startReload();
         if (I.hit('gadget')) this.useGadget();
         if (I.hit('nvg') && this.gadget && this.gadget.id === 'nvg') { this.nvg = !this.nvg; K.ui.toast(this.nvg ? 'Gece görüş açık' : 'Gece görüş kapalı'); }
-        if (I.hit('camera')) CAM.shoulder *= -1;
+        if (I.hit('camera')) { const s = K.save.data.settings; s.view = s.view === 'tp' ? 'fp' : 'tp'; K.save.write(); K.ui.toast(s.view === 'tp' ? 'Üçüncü şahıs kamera' : 'Birinci şahıs kamera'); }
         // ateş
         let spinning = false;
         if (I.fire() && this.w) {
@@ -236,7 +268,11 @@
       this.setAnim(dt);
       const a = this.anim;
       a.armed = this.armed && this.swapT < 0.3;
-      a.aim = U.damp(a.aim, this.aiming || (this.armed && this.fireT > -0.35) ? 1 : 0, 14, dt);
+      // birinci şahısta silah hep hazır tutulur (ekranda görünsün), nişanda omuza
+      const aimT = this.aiming || (this.armed && this.fireT > -0.35) ? 1 : (this.fp && this.armed && !this.sprinting && !(this.wdef && this.wdef.melee) ? 0.78 : 0);
+      a.aim = U.damp(a.aim, aimT, 14, dt);
+      a.fpView = this.fp && a.armed; a.fpYaw = CAM.yaw; a.fpPitch = CAM.pitch;
+      this.applyView();
       a.pitch = CAM.pitch;
       a.reload = this.reloadT;
       a.torsoYaw = 0;

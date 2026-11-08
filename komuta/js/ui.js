@@ -557,8 +557,9 @@
         }
         body.appendChild(grid);
       };
+      sec('ÇATIŞMA GÖREVLERİ — hızlı aksiyon', K.MISSIONS.filter((m) => m.combat));
       sec('ANA KAMPANYA', K.MISSIONS.filter((m) => !m.pack));
-      sec('GÖREV ÇEŞİTLİLİĞİ PAKETLERİ', K.MISSIONS.filter((m) => m.pack));
+      sec('GÖREV ÇEŞİTLİLİĞİ PAKETLERİ', K.MISSIONS.filter((m) => m.pack && !m.combat));
       if (d.campaignDone) body.appendChild(h('div', { class: 'hq-note' }, 'Kampanya tamamlandı. Görevleri tekrar oynayarak daha iyi not ve kozmetik ödüller kazanabilirsin.'));
     },
     hqPersonnel(body) {
@@ -714,6 +715,7 @@
       row('Müzik', rng('musVol', 0, 1, 0.05, () => K.audio.applyVolumes()));
       row('Telsiz konuşmaları (sesli)', sel('voice', [['false', 'Kapalı'], ['true', 'Açık (tarayıcı sesi)']]));
       row('Dokunmatik kontroller', sel('touch', [['auto', 'Otomatik'], ['on', 'Açık'], ['off', 'Kapalı']], () => this.updateTouchVisibility()));
+      row('Kamera (V ile değişir)', sel('view', [['fp', 'Birinci şahıs (yalnız kollar)'], ['tp', 'Üçüncü şahıs']]));
       row('Titreşim (telefon)', sel('vibrate', [['true', 'Açık'], ['false', 'Kapalı']]));
       row('Görevde otomatik tam ekran (telefon)', sel('autoFull', [['true', 'Açık'], ['false', 'Kapalı']]));
       row('Şehir trafiği', sel('traffic', [['true', 'Açık'], ['false', 'Kapalı']]));
@@ -726,7 +728,7 @@
     },
     bindMenus() {
       $('btnContinue').onclick = () => { K.audio.init(); K.audio.ui('ok'); K.game.toHQ(); };
-      $('btnNew').onclick = () => { K.audio.init(); if (K.save.hasProgress() && !confirm('Mevcut kampanya ilerlemesi silinsin mi?')) return; K.save.reset(); K.audio.ui('ok'); K.game.openBriefing('m01'); };
+      $('btnNew').onclick = () => { K.audio.init(); if (K.save.hasProgress() && !confirm('Mevcut kampanya ilerlemesi silinsin mi?')) return; K.save.reset(); K.audio.ui('ok'); K.game.openBriefing('c1'); };
       $('btnSettings').onclick = () => { K.audio.init(); this.settings('menu'); };
       $('btnHelp').onclick = () => { K.audio.init(); this.help('menu'); };
       $('btnFull').onclick = () => { const d = document.documentElement; (d.requestFullscreen || d.webkitRequestFullscreen || (() => {})).call(d); };
