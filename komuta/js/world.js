@@ -697,6 +697,12 @@
         addC(x0, by - 2, z0, x0 + w, by + 4, z0 + d, { surf: 'metal' });
       }
       M.props.flagpole(P, bx - 10, by, bz + 12);
+      // gözetleme kuleleri (Sketchfab)
+      if (WA.has('watchtower')) for (const [dx, dz] of [[34, -18], [-31, 19]]) {
+        const x = bx + dx, z = bz + dz, y = W.terrainH(x, z), md = WA.models.watchtower, s = 9 / md.h, hw = md.w * s / 2, hd = md.d * s / 2;
+        WA.put('watchtower', x, y - 0.1, z, Math.PI / 4, s);
+        for (const [ox, oz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) addC(x + ox * hw * 0.62 - 0.25, y - 1, z + oz * hd * 0.62 - 0.25, x + ox * hw * 0.62 + 0.25, y + 6, z + oz * hd * 0.62 + 0.25, { surf: 'wood' });
+      }
       const cx = -150, cz = -300, cy = W.terrainH(cx, cz);
       W.poi.camp = { x: cx, z: cz, y: cy };
       for (const [dx, dz, ry] of [[-6, -4, 0.3], [7, -6, -0.4], [0, 8, 1.4]]) { M.props.tent(P, cx + dx, cy, cz + dz, ry, 0x4a4e3a); addC(cx + dx - 1.6, cy - 1, cz + dz - 1.8, cx + dx + 1.6, cy + 2, cz + dz + 1.8, { surf: 'wood' }); }
@@ -1266,6 +1272,7 @@
   // ───────── Kare güncellemesi ─────────
   const _tmpV = new THREE.Vector3();
   W.update = function (dt, cam, focus) {
+    if (K.wa.cullList && cam) K.wa.update(dt, cam.position);
     // kapılar
     for (const d of W.doors) {
       if (d.auto) {

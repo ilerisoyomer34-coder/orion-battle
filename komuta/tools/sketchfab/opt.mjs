@@ -4,14 +4,15 @@ import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { dedup, prune, weld, resample, textureCompress, quantize, simplify, flatten, join, instance, unpartition } from '@gltf-transform/functions';
 import { MeshoptSimplifier } from 'meshoptimizer';
 import sharp from 'sharp';
-const [,, inp, out, maxT = '1024', simp = '0'] = process.argv;
+const [,, inp, out, maxT = '1024', simp = '0', serr = '0.002'] = process.argv;
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
 const doc = await io.read(inp);
 const root = doc.getRoot();
 // gereksiz uzantılar / animasyonlar
 for (const a of root.listAnimations()) a.dispose();
 await doc.transform(dedup(), prune(), weld());
-if (+simp > 0) { await MeshoptSimplifier.ready; await doc.transform(simplify({ simplifier: MeshoptSimplifier, ratio: +simp, error: 0.002 })); }
+{ const fx = await import('@gltf-transform/functions'); if (fx.metalRough) await doc.transform(fx.metalRough()); }
+if (+simp > 0) { await MeshoptSimplifier.ready; await doc.transform(simplify({ simplifier: MeshoptSimplifier, ratio: +simp, error: +serr })); }
 const M = +maxT;
 await doc.transform(textureCompress({ encoder: sharp, targetFormat: 'webp', resize: [M, M], quality: 82 }));
 await doc.transform(quantize({ quantizePosition: 14, quantizeNormal: 10, quantizeTexcoord: 12 }), prune(), unpartition());

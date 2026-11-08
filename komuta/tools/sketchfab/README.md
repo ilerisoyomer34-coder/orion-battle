@@ -7,7 +7,7 @@ Oyunun çalışması için gerekmez; harita, araç ve sivil modellerini Sketchfa
    sunucusundan gelir; önizlemeler `media.sketchfab.com`.
 2. `npm install`
 3. `python3 download.py` → `raw/*.glb` ve `meta.json` (başlık, yazar, lisans, kaynak)
-4. `./process.sh` → `opt/*.glb` (WebP dokular: bina/araç/sivil 1024 px, eşya 512 px; nicemlenmiş ağlar;
+4. `./process.sh` → `opt/*.glb` ve oyuna kopyalama + `js/worlddata.js` üretimi (WebP dokular, nicemleme, sadeleştirme, tank tareti ayırma;
    siviller için %20 LOD)
 5. `node inspect.mjs opt/x.glb 3` → düğüm ağacı, boyutlar (tekerlek/taret/bina parçası adları için)
 

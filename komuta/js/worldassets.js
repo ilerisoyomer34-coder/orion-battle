@@ -4,7 +4,10 @@
 'use strict';
 (function () {
   const V3 = THREE.Vector3, M4 = THREE.Matrix4;
-  const CELL = 80;
+  // bölge boyu ve uzaklık ayıklaması türe göre
+  const CELL = { building: 120, tree: 120, pine: 160, watchtower: 200, tent: 160 }, CELL_DEF = 64;
+  const CULL = { car: 150, van: 150, lamp: 130, trafficLight: 150, bench: 120, barrel: 120, barrier: 150, sandbags: 160, container: 260, tree: 300, pine: 420 };
+  const CAST = { building: 1, tree: 1, pine: 1, tent: 1, watchtower: 1, container: 1, sandbags: 1 };
   const _m = new M4(), _m2 = new M4(), _n3 = new THREE.Matrix3(), _v = new V3(), _q = new THREE.Quaternion(), _s = new V3(), _box = new THREE.Box3();
 
   const WA = K.wa = {
@@ -39,7 +42,8 @@
       scene.updateMatrixWorld(true);
       const node = def.node ? scene.getObjectByName(def.node) : scene;
       if (!node) { console.warn('Düğüm yok:', id, def.node); return null; }
-      const inv = new M4().copy(node.matrixWorld).invert();
+      // düğümün dünya eksenlerini koru, yalnız konumunu sıfırla (FBX dönüşleri düğümde olabilir)
+      const np = new V3().setFromMatrixPosition(node.matrixWorld), inv = new M4().makeTranslation(-np.x, -np.y, -np.z);
       const pre = new M4().makeRotationY(def.rotY || 0).multiply(new M4().makeScale(def.scale || 1, def.scale || 1, def.scale || 1));
       const skip = def.skip ? new RegExp(def.skip, 'i') : null;
       const parts = [], box = new THREE.Box3();
@@ -57,6 +61,7 @@
       const c = box.getCenter(new V3()), sz = box.getSize(new V3());
       const t = new M4().makeTranslation(-c.x, -box.min.y, -c.z);
       for (const p of parts) p.m.premultiply(t);
+      if (def.shareMats) { this._mats = this._mats || {}; for (const p of parts) { const k = def.kind + ':' + p.mat.name; if (this._mats[k] && !/body/i.test(p.mat.name)) p.mat = this._mats[k]; else this._mats[k] = p.mat; } }
       for (const p of parts) this.fixMat(p.mat, def);
       return { id, def, parts, w: sz.x, h: sz.y, d: sz.z };
     },
@@ -66,7 +71,11 @@
       if (m.transparent && m.opacity > 0.97 && !m.alphaMap) { m.transparent = false; }
       if (m.map && m.alphaTest === 0 && m.transparent) { m.alphaTest = 0.4; m.transparent = false; }
       if (def.kind === 'tree' || /leaf|leaves|foliage|bush|grass/i.test(m.name)) { m.alphaTest = Math.max(m.alphaTest, 0.45); m.transparent = false; m.side = THREE.DoubleSide; }
-      if (m.metalness > 0.9 && !m.metalnessMap) m.metalness = 0.6;   // ortam haritası olmadığından aşırı koyu metal olmasın
+      // ortam haritası yok: metal yüzeyler siyaha kaçmasın, binalar yarı mat görünsün
+      if (!m.metalnessMap) m.metalness = Math.min(m.metalness, def.kind === 'building' || def.kind === 'container' ? 0.05 : 0.35);
+      if (def.kind === 'container') { m.roughness = Math.max(m.roughness, 0.7); m.color.multiplyScalar(1.6); }
+      if (def.kind === 'building' && !m.roughnessMap) m.roughness = Math.max(m.roughness, 0.75);
+      if (m.emissiveMap && def.kind === 'building') m.emissiveIntensity = 0.6;
       if (m.map) m.map.anisotropy = 4;
       m.needsUpdate = true;
     },
@@ -75,12 +84,13 @@
     add(id, mx, tint) {
       const md = this.models[id]; if (!md) return false;
       _v.setFromMatrixPosition(mx);
-      const ck = Math.floor(_v.x / CELL) * 1000 + Math.floor(_v.z / CELL);
+      const cs = CELL[md.def.kind] || CELL_DEF;
+      const ck = Math.floor(_v.x / cs) * 1000 + Math.floor(_v.z / cs);
       for (const p of md.parts) {
         const tinted = tint !== undefined && md.def.tint;
         const key = p.mat.uuid + (tinted ? '#t' : '') + '|' + ck;
         let b = this.buckets.get(key);
-        if (!b) { b = { mat: p.mat, tinted, items: [], cast: md.def.cast !== false, kind: md.def.kind }; this.buckets.set(key, b); }
+        if (!b) { b = { mat: p.mat, tinted, items: [], cast: md.def.cast !== undefined ? !!md.def.cast : !!CAST[md.def.kind], kind: md.def.kind }; this.buckets.set(key, b); }
         b.items.push({ p, mx: mx.clone().multiply(p.m), tint });
       }
       this.placed++;
@@ -160,11 +170,20 @@
         const mesh = new THREE.Mesh(g, mat);
         mesh.castShadow = b.cast; mesh.receiveShadow = true; mesh.matrixAutoUpdate = false; mesh.updateMatrix();
         mesh.userData.wa = b.kind;
+        if (CULL[b.kind]) { mesh.userData.cull = CULL[b.kind] + g.boundingSphere.radius; mesh.userData.c = g.boundingSphere.center.clone(); }
         scene.add(mesh); out.push(mesh);
       }
       this.meshes = out;
+      this.cullList = out.filter((m) => m.userData.cull);
       this.buckets.clear();
       return out;
+    },
+    // uzaktaki küçük eşyaları gizle (kamera konumuna göre, 4 Hz)
+    update(dt, p) {
+      if (!this.cullList || !p) return;
+      this._t = (this._t || 0) - dt; if (this._t > 0) return; this._t = 0.25;
+      const far = K.game && K.game.qualityLevel && K.game.qualityLevel() === 'low' ? 0.7 : 1;
+      for (const m of this.cullList) { const c = m.userData.c, d = m.userData.cull * far; m.visible = (c.x - p.x) ** 2 + (c.z - p.z) ** 2 < d * d; }
     },
 
     // ── prosedürel sahne eşyalarını dünya kurulumu sırasında GLB örnekleriyle değiştir
@@ -187,7 +206,7 @@
       wrap('barrier', (P, x, y, z, ry, c) => fitOne(P, 'barrier', x, y, z, ry, 2.0, 'w'));
       wrap('barrel', (P, x, y, z, c) => fitOne(P, 'barrel', x, y, z, (seed(x, z) % 628) / 100, 0.9, 'h', c));
       wrap('container', (P, x, y, z, ry, c) => fitOne(P, 'container', x, y, z, ry, 6.06, 'd', c));
-      wrap('tent', (P, x, y, z, ry, c) => fitOne(P, 'tent', x, y, z, ry, 4.2, 'd'));
+      wrap('tent', (P, x, y, z, ry, c) => fitOne(P, 'tent', x, y, z, ry, 5.5, 'd'));
       wrap('sandbags', (P, x, y, z, ry, w = 2.4) => {
         const id = self.pick('sandbags', 0); if (!id) return false;
         const md = self.models[id], n = Math.max(1, Math.round(w / md.w)), seg = w / n;
@@ -212,43 +231,30 @@
       const L = this.list('building', style);
       if (!L.length) return null;
       const W = x1 - x0, D = z1 - z0, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
-      const alongX = W >= D, Ls = alongX ? W : D, Ss = alongX ? D : W;
-      const frontLong = alongX ? (front === 'pz' || front === 'nz') : (front === 'px' || front === 'nx');
+      // cephe sokağa bakan kenar boyunca; derinlik ayrı ölçeklenir (sokaktan az görünür)
+      const fx = front === 'pz' || front === 'nz';
+      const Lf = fx ? W : D, Ld = fx ? D : W;
       const cands = [];
       for (const md of L) {
-        const lim = md.def.maxTile || 6;
-        for (const rot of [0, 1]) {
-          // rot 0: modelin genişliği (x) uzun kenar boyunca; rot 1: derinliği
-          const pl = rot ? md.d : md.w, ps = rot ? md.w : md.d;
-          const s = Ss / ps;
-          const n = Math.max(1, Math.min(lim, Math.round(Ls / (pl * s))));
-          const k = Ls / (n * pl * s);
-          const hh = md.h * s;
-          const hk = Math.min(1.25, Math.max(0.8, h / hh));
-          const cost = Math.abs(Math.log(k)) * 2.2 + Math.abs(Math.log(hh * hk / h)) * 0.6 + Math.abs(Math.log(hk)) * 1.2 + Math.abs(Math.log(s)) * 0.5 + (n - 1) * 0.06 + ((rot ? frontLong : !frontLong) ? 0.45 : 0);
-          cands.push({ md, rot, s, n, k, hk, cost });
-        }
+        const s = Math.min(1.3, Math.max(0.72, h / md.h));          // kat yüksekliğini koru
+        const n = Math.max(1, Math.min(md.def.maxTile || 6, Math.round(Lf / (md.w * s))));
+        const k = Lf / (n * md.w * s);                               // cephe genişliği esnetmesi
+        const sd = Ld / md.d;                                        // derinlik
+        if (k < 0.6 || k > 1.65 || sd < 0.3 || sd > 3) continue;
+        const cost = Math.abs(Math.log(k)) * 2.4 + Math.abs(Math.log(md.h * s / h)) * 0.9 + Math.abs(Math.log(sd)) * 0.35 + (n - 1) * 0.05;
+        cands.push({ md, s, n, k, sd, cost });
       }
+      if (!cands.length) return null;
       cands.sort((a, b) => a.cost - b.cost);
-      const top = cands.filter((c) => c.cost < cands[0].cost + 0.18).slice(0, 4);
-      const ch = top[Math.floor(rnd() * top.length)] || cands[0];
-      if (ch.cost > 2.6) return null;
-      const { md, rot, s, n, k, hk } = ch;
-      // ön yüz yönü: front = 'px'|'nx'|'pz'|'nz' (sokağa bakan kenar)
-      const pieces = [];
-      const pl = (rot ? md.d : md.w) * s * k;
+      const top = cands.filter((c) => c.cost < cands[0].cost + 0.2).slice(0, 4);
+      const { md, s, n, k, sd } = top[Math.floor(rnd() * top.length)];
+      const ry = front === 'pz' ? 0 : front === 'nz' ? Math.PI : front === 'px' ? Math.PI / 2 : -Math.PI / 2;
+      const pieces = [], seg = Lf / n;
       for (let i = 0; i < n; i++) {
-        const t = -Ls / 2 + pl * (i + 0.5);
-        const px = alongX ? cx + t : cx, pz = alongX ? cz : cz + t;
-        // model önü +z; uzun kenar x boyuncaysa ve rot=0 ise önü ±z'ye bakar
-        let ry;
-        if (alongX) ry = rot ? (front === 'px' ? Math.PI / 2 : -Math.PI / 2) : (front === 'nz' ? Math.PI : 0);
-        else ry = rot ? (front === 'nz' ? Math.PI : 0) : (front === 'px' ? Math.PI / 2 : -Math.PI / 2);
-        // ölçek: modelin yerel x/z'si dönüşe göre
-        const sxL = rot ? s : s * k, szL = rot ? s * k : s;
-        pieces.push({ id: md.id, x: px, z: pz, ry, sx: sxL, sy: s * hk, sz: szL });
+        const t = -Lf / 2 + seg * (i + 0.5);
+        pieces.push({ id: md.id, x: fx ? cx + t : cx, z: fx ? cz : cz + t, ry, sx: s * k, sy: s, sz: sd });
       }
-      return { pieces, h: md.h * s * hk };
+      return { pieces, h: md.h * s };
     },
   };
 })();

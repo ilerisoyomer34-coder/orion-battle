@@ -39,7 +39,7 @@
   }
   // Farklı iskelet adlandırmalarını (Mixamo önekli, UE/Renderpeople, Blender .L/.R) Mixamo adlarına çevir
   const ALIAS = {
-    pelvis: 'Hips', hips: 'Hips', hip: 'Hips', spine: 'Spine', spine01: 'Spine', spine1: 'Spine1', spine02: 'Spine1', spine2: 'Spine2', spine03: 'Spine2', chest: 'Spine2', upperchest: 'Spine2',
+    pelvis: 'Hips', hips: 'Hips', hip: 'Hips', spine: 'Spine', spine01: 'Spine', spine1: 'Spine1', spine02: 'Spine1', spine2: 'Spine2', spine03: 'Spine2', upperchest: 'Spine2',
     neck: 'Neck', neck01: 'Neck', head: 'Head',
     claviclel: 'LeftShoulder', shoulderl: 'LeftShoulder', leftshoulder: 'LeftShoulder', upperarml: 'LeftArm', leftarm: 'LeftArm', lowerarml: 'LeftForeArm', forearml: 'LeftForeArm', leftforearm: 'LeftForeArm', handl: 'LeftHand', lefthand: 'LeftHand',
     clavicler: 'RightShoulder', shoulderr: 'RightShoulder', rightshoulder: 'RightShoulder', upperarmr: 'RightArm', rightarm: 'RightArm', lowerarmr: 'RightForeArm', forearmr: 'RightForeArm', rightforearm: 'RightForeArm', handr: 'RightHand', righthand: 'RightHand',
@@ -48,7 +48,12 @@
   };
   const FING = { index: 'Index', middle: 'Middle', ring: 'Ring', pinky: 'Pinky', little: 'Pinky', thumb: 'Thumb' };
   function canonName(n) {
-    let s = n.replace(/^mixamorig\d*[:_]?/i, '').replace(/^(rp_[a-z0-9]+_[a-z0-9]+_\d+_|bip0?1[_ ]?|def[-_]|character\d*[:_])/i, '');
+    const s0 = n.replace(/^mixamorig\d*[:_]?/i, '').replace(/^(rp_[a-z0-9]+_[a-z0-9]+_\d+_(?:walking_|idling_|running_|dancing_|standing_|posed_)?|bip0?1[_ ]?|def[-_]|character\d*[:_])/i, '');
+    // önce glTF dışa aktarımlarının eklediği sıra numarasını at (Hips_01, upperarm_l_024, spine_02_04)
+    const s1 = s0.replace(/_\d+$/, '');
+    return (s1 !== s0 && canonCore(s1)) || canonCore(s0);
+  }
+  function canonCore(s) {
     if (ORDER.includes(s) || /^(Left|Right)Hand(Index|Middle|Ring|Pinky|Thumb)\d$/.test(s)) return s;
     const k = s.toLowerCase().replace(/[^a-z0-9]/g, '');
     if (ALIAS[k]) return ALIAS[k];
@@ -61,8 +66,15 @@
     return null;
   }
   function canonicalize(root) {
-    const seen = new Set();
-    root.traverse((o) => { if (!o.isBone) return; const c = canonName(o.name); if (c && !seen.has(c)) { seen.add(c); o.name = c; } });
+    const seen = new Set(), bones = [];
+    root.traverse((o) => { if (o.isBone) bones.push(o); });
+    const hasUpper = bones.some((o) => /upper_?chest/i.test(o.name));
+    for (const o of bones) {
+      let c = canonName(o.name);
+      if (!c && /(^|_)chest(_\d+)?$/i.test(o.name)) c = hasUpper ? 'Spine1' : 'Spine2';
+      if (c === 'Spine2' && /(^|_)chest(_\d+)?$/i.test(o.name) && hasUpper) c = 'Spine1';
+      if (c && !seen.has(c)) { seen.add(c); o.name = c; }
+    }
   }
   // A pozunda bağlanmış modelleri T pozuna getir (kol yatay, bacak dik)
   function toTPose(B, scene) {
