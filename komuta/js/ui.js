@@ -732,7 +732,7 @@
       $('btnNew').onclick = () => { K.audio.init(); if (K.save.hasProgress() && !confirm('Mevcut kampanya ilerlemesi silinsin mi?')) return; K.save.reset(); K.audio.ui('ok'); K.game.openBriefing('c1'); };
       $('btnSettings').onclick = () => { K.audio.init(); this.settings('menu'); };
       $('btnHelp').onclick = () => { K.audio.init(); this.help('menu'); };
-      $('btnFree').onclick = () => { K.audio.init(); K.audio.ui('ok'); const s = K.save.data.settings; s.freeMode = !(s.freeMode === true); K.save.write(); this.updateMenu(); if (s.freeMode) { K.game.toHQ('missions'); this.toast('Serbest mod açık: tüm görevler, silahlar ve birlikler açıldı', 'ok'); } };
+      $('btnFree').onclick = () => { K.audio.init(); K.audio.ui('ok'); const s = K.save.data.settings; s.freeMode = !(s.freeMode === true); if (s.freeMode) K.prog.makeGeneral(); K.save.write(); this.updateMenu(); if (s.freeMode) { K.game.toHQ('missions'); this.toast('Orgeneral rütbesi: tüm görevler, silahlar, birlikler ve yetenekler açık', 'ok'); } };
       $('btnFull').onclick = () => { const d = document.documentElement; (d.requestFullscreen || d.webkitRequestFullscreen || (() => {})).call(d); };
       document.querySelectorAll('#hqTabs button').forEach((b) => (b.onclick = () => { K.audio.ui(); if (b.dataset.tab === 'settings') this.settings('hq'); else if (b.dataset.tab === 'menu') { K.game.toMenu(); } else this.hq(b.dataset.tab); }));
       $('pResume').onclick = () => K.game.resume();
@@ -755,7 +755,7 @@
       const d = K.save.data;
       $('menuRank').textContent = has ? `${K.prog.rankDef().name} · ${d.xp} XP · ${Object.values(d.missions).filter((m) => m.done).length} görev tamamlandı` : '';
       K.pwa.updateButtons();
-      const fb = $('btnFree'); if (fb) { const on = K.prog.free(); fb.textContent = on ? '✓ Serbest mod açık — tüm görevler' : 'Serbest mod: tüm görevleri aç'; fb.classList.toggle('on', on); }
+      const fb = $('btnFree'); if (fb) { const on = K.prog.free(); fb.textContent = on ? '✓ Orgeneral · serbest mod — tüm görevler açık' : 'Orgeneral olarak başla (tüm görevler açık)'; fb.classList.toggle('on', on); }
       K.pwa.offlineStatus().then((st) => { const el = $('offlineTxt'); if (!el) return; el.textContent = !st ? '' : st.have >= st.total ? '✓ Çevrimdışı oynanabilir — tüm modeller cihazda' : `Çevrimdışı hazırlık: ${st.have}/${st.total} model cihazda`; }).catch(() => {});
     },
     // ─────────── Dokunmatik kontroller

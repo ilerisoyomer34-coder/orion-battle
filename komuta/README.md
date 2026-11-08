@@ -26,7 +26,7 @@ GitHub Pages açıksa oyun `https://<kullanıcı>.github.io/orion-battle/komuta/
 - **Birinci şahıs (varsayılan):** Karakterin gövdesi görünmez; yalnızca kolları ve silahı görülür. Silah hazırda sağ altta durur, nişan alınca (sağ tık / NİŞAN) gez ekranın ortasına gelir. Yürürken sallanma, ateşte geri tepme, şarjör değiştirme ve koşu hareketleri vardır. **V** (dokunmatikte V düğmesi) üçüncü şahısa geçirir; Ayarlar → Kamera'dan da seçilir. Araç kullanırken kamera üçüncü şahıstır.
 - **Çatışma görevleri (Ç-1…Ç-4):** Merkezde en üstte, baştan açık. Silahlı başlar, konuşma veya bulmaca yoktur: Eski şehirde iki meydanı temizle; limanı al ve gelen dalgalara karşı savun; sanayi deposunda komutanı etkisiz hâle getir; batı mahallelerinde rehineleri kurtar. Yeni kampanya Ç-1 ile başlar.
 - **Görev 01:** Sivil kılık artık zorunlu değil; alarm verilmesi görevi bitirmez.
-- **Serbest mod:** Ana menüdeki "Serbest mod" düğmesi (veya Ayarlar) rütbe ve ön koşul beklemeden bütün görevleri, silahları, birlikleri, üniformaları ve araçları açar; kampanya kaydı silinmez, kapatınca normal ilerlemeye dönülür.
+- **Orgeneral / serbest mod:** Ana menüdeki "Orgeneral olarak başla" düğmesi rütbeyi Orgeneral yapar, bütün yetenekleri en üst seviyeye çıkarır, bütün kamuflajları açar ve rütbe/ön koşul beklemeden bütün görevleri, silahları, birlikleri, üniformaları ve araçları açar. Serbest mod Ayarlar'dan kapatılabilir (rütbe korunur).
 
 ### Telefona uygulama olarak kurma (PWA)
 

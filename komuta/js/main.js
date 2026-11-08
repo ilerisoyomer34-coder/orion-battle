@@ -10,6 +10,7 @@
       const bar = $('bootBar'), txt = $('bootTxt');
       const step = (p, t) => new Promise((res) => { bar.style.width = Math.round(p * 100) + '%'; txt.textContent = t; setTimeout(res, 16); });
       K.save.load();
+      if (window.KOMUTA_FREE === true && !K.save.data.generalSetup) K.prog.makeGeneral();
       K.input.init($('c'));
       await step(0.05, 'Grafik motoru hazırlanıyor');
       this.setupRenderer();

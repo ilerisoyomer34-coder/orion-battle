@@ -74,6 +74,17 @@
     upgrade(id) { if (!P.canUpgrade(id)) return false; S().skills[id] = P.skillVal(id) + 1; S().skillPts--; K.save.write(); return true; },
     // serbest mod: rütbe/ön koşul beklemeden her şey açık (kayıt silinmez)
     free() { return K.save.data.settings.freeMode === true; },
+    // Orgeneral olarak başla: en yüksek rütbe, bütün yetenekler en üst seviyede, bütün kamuflajlar
+    makeGeneral() {
+      const d = S(), top = K.RANKS.length - 1;
+      d.settings.freeMode = true;
+      d.rank = Math.max(d.rank, top); d.xp = Math.max(d.xp, K.RANKS[top].xp);
+      for (const sk of K.SKILLS) d.skills[sk.id] = sk.max;
+      d.skillPts = 0;
+      d.cosmetics = Object.keys(K.COSMETICS);
+      d.generalSetup = true;
+      K.save.write();
+    },
     squadMax() { if (P.free()) return Math.max(...K.RANKS.map((r) => r.squad)) + 1; return K.RANKS[S().rank].squad + (S().rank >= 1 && P.skillVal('support') >= 1 ? 1 : 0); },
     unitUnlocked(u) { return P.free() || S().rank >= (K.UNITS[u].rank || 0); },
     rosterAvailable() { return K.ROSTER.filter((r) => P.unitUnlocked(r.unit)); },
