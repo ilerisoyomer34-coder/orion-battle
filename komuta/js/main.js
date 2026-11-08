@@ -13,8 +13,15 @@
       K.input.init($('c'));
       await step(0.05, 'Grafik motoru hazırlanıyor');
       this.setupRenderer();
-      await step(0.1, 'Prosedürel dokular üretiliyor');
+      await step(0.08, 'Prosedürel dokular üretiliyor');
       K.tex.build(); K.models.init();
+      K.assets.init();
+      await step(0.1, 'Asker modelleri yükleniyor');
+      await K.assets.loadCharacters((p, id) => { bar.style.width = Math.round((0.1 + p * 0.06) * 100) + '%'; txt.textContent = 'Asker modelleri yükleniyor (' + Math.round(p * 100) + '%)'; });
+      await step(0.16, 'Helikopter modeli yükleniyor');
+      await K.assets.loadHeli();
+      K.assets.preloadWeapons(['kr4', 'pistol_s']);
+      K.bus.on('weaponAssetReady', (asset) => this.refreshWeaponModels(asset));
       await step(0.18, 'Şehir inşa ediliyor');
       this.scene = new THREE.Scene();
       this.dyn = new THREE.Group(); this.scene.add(this.dyn);
@@ -112,6 +119,7 @@
     clearMission() {
       for (const a of this.actors) a.remove();
       if (this.player) this.player.remove();
+      K.combat.clearRockets();
       for (const v of this.vehicles) v.remove();
       for (const m of this.fxMarkers) this.dyn.remove(m.m);
       while (this.dyn.children.length) this.dyn.remove(this.dyn.children[0]);
@@ -173,9 +181,15 @@
       const of = K.OUTFITS[outfitId];
       const look = Object.assign({}, K.models.LOOKS[of.look]);
       const cos = K.COSMETICS[K.save.data.cosmetic];
-      if (cos && outfitId === 'tactical') { look.uniform = cos.tint; look.pants = cos.tint; }
+      if (cos && outfitId === 'tactical') { look.uniform = cos.tint; look.pants = cos.tint; if (cos.glb) { look.glb = cos.glb; look.glbTint = cos.glbTint; } }
       const gadget = lo.gadget;
-      this.player = new K.Player({ x: ins.x, z: ins.z, yaw: ins.yaw || 0, look, outfit: outfitId, primary: def.noWeapons ? null : lo.primary, secondary: 'pistol_s', gadget });
+      let secondary = lo.secondary || 'pistol_s';
+      if (!K.WEAPONS[secondary] || !K.prog.weaponUnlocked(secondary)) secondary = 'pistol_s';
+      let primary = def.noWeapons ? null : lo.primary;
+      if (outfitId === 'civil' && primary && !['pistol_s', 'pistol', 'd50', 'knife'].includes(primary)) primary = null;
+      if (outfitId === 'civil' && !['pistol_s', 'pistol', 'd50', 'knife'].includes(secondary)) secondary = 'pistol_s';
+      K.assets.preloadWeapons([primary, secondary, 'ak47', 'ak74', 'mp7', 'd50'].filter(Boolean));
+      this.player = new K.Player({ x: ins.x, z: ins.z, yaw: ins.yaw || 0, look, outfit: outfitId, primary, secondary, gadget });
       if (K.prog.skillVal('support') >= 2 && this.player.gadget) this.player.gadget.count++;
       if (def.noWeapons) { this.player.weapons = []; this.player.holstered = true; K.models.setWeapon(this.player.rig, null); }
       this.actors.push(this.player);
@@ -215,6 +229,12 @@
       }
       K.audio.say(def.title);
       setTimeout(() => this.relock(), 50);
+    },
+    // GLB silah modeli geç yüklendiğinde eldeki prosedürel yedeği değiştir
+    refreshWeaponModels(asset) {
+      const P = this.player; if (!P || !P.rig) return;   // diğer aktörler mesafeye göre weaponLOD ile güncellenir
+      const R = P.rig, W = R.weapon && K.WEAPONS[R.weapon];
+      if (W && W.asset === asset && !R.gunGLB) K.models.setWeapon(R, R.weapon);
     },
     restartMission() { if (this.currentId) this.startMission(this.currentId, this.loadout); },
     abortMission() { this.paused = false; this.toHQ(); },
@@ -388,6 +408,7 @@
       K.ai.pathBudget = 3;
       for (const a of this.actors) { a.update(dt); a.syncRig(dt); }
       for (const v of this.vehicles) v.update(dt);
+      K.combat.updateRockets(dt);
       K.world.update(dt, this.camera, K.cam.orbitCenter ? { x: K.cam.orbitCenter.x, y: 0, z: K.cam.orbitCenter.z } : null);
       K.fx.update(dt);
       K.cam.update(dt);
@@ -433,6 +454,7 @@
         for (const a of this.actors) if (a !== P) a.update(sdt);
         this._rotorVol = 0;
         for (const v of this.vehicles) v.update(sdt);
+        K.combat.updateRockets(sdt);
         K.audio.setLoop('rotor', Math.min(0.8, this._rotorVol || 0), this._rotorRate || 0);
         if (!P || !P.vehicle) K.audio.setLoop('engine', 0);
         if (!this.cinematic) K.mission.update(sdt);

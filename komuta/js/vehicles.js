@@ -7,7 +7,7 @@
     patrol: { name: '4x4 Zırhlı Devriye', hp: 900, len: 5.4, wid: 2.3, h: 2.9, maxSpeed: 24, accel: 9, brake: 20, steerMax: 0.55, wb: 3.5, kind: 'wheeled', cam: [9, 3.6], seats: ['driver', 'front', 'rear', 'rear', 'gunner'], model: () => K.models.veh4x4() },
     apc: { name: '8x8 Personel Taşıyıcı', hp: 1700, len: 7.9, wid: 2.9, h: 3.3, maxSpeed: 20, accel: 6.5, brake: 16, steerMax: 0.42, wb: 5.4, kind: 'wheeled', cam: [12, 4.6], seats: ['driver', 'gunner', 'rear', 'rear', 'rear', 'rear', 'rear', 'rear', 'rear', 'rear'], model: () => K.models.vehAPC() },
     tank: { name: 'Ana Muharebe Tankı', hp: 3200, len: 7.6, wid: 3.6, h: 2.9, maxSpeed: 15, accel: 3.6, brake: 9, steerMax: 0, turn: 0.75, wb: 4, kind: 'tracked', cam: [13, 5.2], seats: ['driver', 'crew', 'crew'], model: () => K.models.vehTank() },
-    heli: { name: 'Nakliye Helikopteri', hp: 1500, len: 9, wid: 2.6, h: 3.6, maxSpeed: 42, kind: 'heli', cam: [16, 5], seats: ['pilot', 'copilot', 'rear', 'rear', 'rear', 'rear', 'rear', 'rear', 'rear', 'rear'], model: () => K.models.vehHeli() },
+    heli: { name: 'Nakliye Helikopteri (Şahin-2)', hp: 1500, len: 11, wid: 2.6, h: 3.6, maxSpeed: 42, kind: 'heli', cam: [16, 5], seats: ['pilot', 'copilot', 'rear', 'rear', 'rear', 'rear', 'rear', 'rear', 'rear', 'rear'], model: () => K.models.vehHeli() },
     truck: { name: 'TIR (Siyah Akrep Lojistik)', hp: 1300, len: 7.4, wid: 2.5, h: 4, maxSpeed: 22, accel: 4.2, brake: 12, steerMax: 0.5, wb: 4.6, kind: 'wheeled', truck: true, cam: [16, 6], seats: ['driver', 'front'], model: () => K.models.vehTruck() },
     sedan: { name: 'Sivil araç', hp: 380, len: 4.4, wid: 1.85, h: 1.6, maxSpeed: 20, accel: 7, brake: 18, steerMax: 0.6, wb: 2.7, kind: 'wheeled', cam: [7, 2.6], seats: ['driver', 'front', 'rear', 'rear'], model: (c) => K.models.vehCar('sedan', c) },
     suv: { name: 'Zırhlı SUV', hp: 700, len: 4.8, wid: 2.0, h: 1.9, maxSpeed: 22, accel: 7.5, brake: 18, steerMax: 0.55, wb: 3.1, kind: 'wheeled', cam: [8, 2.9], seats: ['driver', 'front', 'rear', 'rear'], model: (c) => K.models.vehCar('suv', c || 0x121214) },
@@ -302,7 +302,7 @@
       W().pushCircle(_p, 2.2, this.pos.y + 0.8, this.pos.y + 3.2, _push);
       if (_push.hit) { this.pos.x = _p.x; this.pos.z = _p.z; if (hs > 8) { this.damage(hs * 6); K.cam.shake(0.6); } this.vel.x *= -0.3; this.vel.z *= -0.3; }
       _p.set(this.pos.x, this.pos.y, this.pos.z);
-      W().pushCircle(_p, 7.0, this.pos.y + 3.6, this.pos.y + 4.2, _push);
+      W().pushCircle(_p, this.m.rotorR || 7.0, this.pos.y + (this.m.rotorY || 3.9) - 0.3, this.pos.y + (this.m.rotorY || 3.9) + 0.3, _push);
       if (_push.hit && this.rotor > 0.5 && this.flying) { this.damage(150 * dt * 10); this.pos.x = _p.x; this.pos.z = _p.z; this.vel.x *= -0.5; this.vel.z *= -0.5; K.audio.impact(this.pos, 'metal'); }
       const g2 = W().groundAt(this.pos.x, this.pos.z, this.pos.y + 0.6, 1.4);
       if (this.pos.y <= g2) {
@@ -366,8 +366,12 @@
       this.m.body.rotation.set(this.pitch, 0, this.roll);
       const D = this.def;
       if (D.kind === 'heli') {
-        if (this.m.rotor) { this.m.rotor.rotation.y += this.rotor * 28 * dt; this.m.rotorBlur.material.opacity = this.rotor > 0.6 ? 0.25 * this.rotor : 0; }
-        if (this.m.tailRotor) this.m.tailRotor.rotation.x += this.rotor * 50 * dt;
+        if (this.m.spin) this.m.spin(dt, this.rotor);
+        else {
+          if (this.m.rotor) this.m.rotor.rotation.y += this.rotor * 28 * dt;
+          if (this.m.tailRotor) this.m.tailRotor.rotation.x += this.rotor * 50 * dt;
+        }
+        if (this.m.rotorBlur) this.m.rotorBlur.material.opacity = this.rotor > 0.6 ? 0.22 * this.rotor : 0;
         if (this.m.door) { const target = this.flying && !this.ai ? 0 : this.doorOpen; this.m.door.position.z = U.damp(this.m.door.position.z, -1.6 * target, 3, dt); }
       } else {
         this.wheelSpin += this.speed * dt;

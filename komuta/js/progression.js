@@ -15,11 +15,11 @@
 
   K.UNITS = {
     agent: { id: 'agent', name: 'Gizli Ajan', look: 'agent', weapon: 'pistol_s', hp: 95, armor: 0, acc: 0.62, speed: 1.0, abilities: ['stealth', 'hack'], rank: 1, desc: 'İpucu, araştırma, takip. Sivil görünüm: şüphe çekmez; terminalleri %40 hızlı çözer.' },
-    standard: { id: 'standard', name: 'Standart Tim', look: 'soldier', weapon: 'rifle', hp: 115, armor: 50, acc: 0.64, speed: 1.0, abilities: [], rank: 1, desc: 'Genel saha görevleri. Takip et, bekle, işaretlenen yere git.' },
+    standard: { id: 'standard', name: 'Standart Tim', look: 'soldier', weapon: 'kr4', hp: 115, armor: 50, acc: 0.64, speed: 1.0, abilities: [], rank: 1, desc: 'Genel saha görevleri. Takip et, bekle, işaretlenen yere git.' },
     steel: { id: 'steel', name: 'Çelik Kuvvet', look: 'steel', weapon: 'lmg', hp: 160, armor: 110, acc: 0.58, speed: 0.88, abilities: ['guard'], rank: 3, desc: 'Koruma ve zor görev desteği. Yüksek dayanıklılık; bölge korurken %30 daha az hasar.' },
     riot: { id: 'riot', name: 'Çevik Kuvvet', look: 'riot', weapon: 'pistol_s', shield: true, hp: 135, armor: 90, acc: 0.52, speed: 0.95, abilities: ['barrier', 'civil'], rank: 4, desc: 'Kalabalık kontrolü ve tahliye. Kalkan, bariyer kurma, sivil yönlendirme.' },
     special: { id: 'special', name: 'Özel Harekât', look: 'special', weapon: 'smg_s', hp: 125, armor: 70, acc: 0.76, speed: 1.1, abilities: ['breach', 'fast'], rank: 5, desc: 'Gelişmiş bina içi görevler. Hızlı takım koordinasyonu, susturuculu silah.' },
-    elite: { id: 'elite', name: 'Seçkin Birlik', look: 'elite', weapon: 'rifle', hp: 145, armor: 85, acc: 0.86, speed: 1.08, abilities: ['hack', 'breach', 'guard', 'medic'], rank: 6, desc: 'Geç oyun hikâye operasyonları. Birden fazla uzmanlık, gelişmiş koordinasyon.' },
+    elite: { id: 'elite', name: 'Seçkin Birlik', look: 'elite', weapon: 'k8', hp: 145, armor: 85, acc: 0.86, speed: 1.08, abilities: ['hack', 'breach', 'guard', 'medic'], rank: 6, desc: 'Geç oyun hikâye operasyonları. Birden fazla uzmanlık, gelişmiş koordinasyon.' },
   };
 
   K.ROSTER = [
@@ -54,11 +54,11 @@
   ];
 
   K.COSMETICS = {
-    std: { name: 'Standart kamuflaj', tint: 0x6b7356 },
-    urban: { name: 'Şehir kamuflajı', tint: 0x6a6e72, how: 'Herhangi bir görevi A notuyla bitir' },
-    night: { name: 'Gece kamuflajı', tint: 0x2e3440, how: 'Bir gece görevini S notuyla bitir' },
-    desert: { name: 'Çöl kamuflajı', tint: 0x9a8a62, how: '5 görevi tamamla' },
-    gold: { name: 'Altın amblem', tint: 0x6b7356, how: 'Tüm ana görevlerde en az A notu' },
+    std: { name: 'Orman kamuflajı (Demir)', tint: 0x6b7356, glb: 'squad_woodland' },
+    urban: { name: 'Şehir kamuflajı (Yıldız)', tint: 0x6a6e72, glb: 'squad_forest', how: 'Herhangi bir görevi A notuyla bitir' },
+    night: { name: 'Gece kamuflajı', tint: 0x2e3440, glb: 'squad_forest', glbTint: 0x7a8296, how: 'Bir gece görevini S notuyla bitir' },
+    desert: { name: 'Çöl kamuflajı (Kaya)', tint: 0x9a8a62, glb: 'squad_desert', how: '5 görevi tamamla' },
+    gold: { name: 'Altın amblem', tint: 0x6b7356, glb: 'squad_woodland', how: 'Tüm ana görevlerde en az A notu' },
   };
 
   const S = () => K.save.data;

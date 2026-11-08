@@ -3,15 +3,58 @@
 (function () {
   const U = K.U, V3 = THREE.Vector3;
 
-  // ───────── Silahlar (kurgusal adlar) ─────────
-  K.WEAPONS = {
-    pistol_s: { id: 'pistol_s', name: 'K-9 Tabanca', sub: 'susturuculu', dmg: 36, rof: 0.22, mag: 12, mags: 6, reload: 1.4, spread: 0.014, aimSpread: 0.004, range: 70, noise: 9, silenced: true, auto: false, recoil: 0.014, slot: 'secondary', snd: 'pistol_s' },
-    rifle: { id: 'rifle', name: 'KT-5 Piyade Tüfeği', sub: '5.56 mm', dmg: 30, rof: 0.095, mag: 30, mags: 6, reload: 2.1, spread: 0.03, aimSpread: 0.006, range: 200, noise: 70, auto: true, recoil: 0.016, slot: 'primary', snd: 'rifle' },
-    smg_s: { id: 'smg_s', name: 'HMS-7 Hafif Makineli', sub: 'susturuculu', dmg: 23, rof: 0.075, mag: 30, mags: 6, reload: 1.8, spread: 0.032, aimSpread: 0.01, range: 100, noise: 14, silenced: true, auto: true, recoil: 0.011, slot: 'primary', snd: 'smg_s', rank: 2 },
-    dmr: { id: 'dmr', name: 'KN-2 Keskin Nişancı', sub: '7.62 mm, 4x dürbün', dmg: 96, rof: 0.6, mag: 10, mags: 5, reload: 2.6, spread: 0.045, aimSpread: 0.0008, range: 320, noise: 90, auto: false, recoil: 0.05, zoom: 22, slot: 'primary', snd: 'dmr', rank: 3 },
-    lmg: { id: 'lmg', name: 'AM-3 Makineli', sub: '100 fişek', dmg: 27, rof: 0.085, mag: 100, mags: 3, reload: 4.0, spread: 0.045, aimSpread: 0.014, range: 200, noise: 80, auto: true, recoil: 0.014, slot: 'primary', snd: 'lmg', rank: 3 },
-    shotgun: { id: 'shotgun', name: 'P-12 Pompalı', sub: '12 ga', dmg: 15, pellets: 9, rof: 0.8, mag: 7, mags: 6, reload: 3.0, spread: 0.075, aimSpread: 0.05, range: 45, noise: 80, auto: false, recoil: 0.06, slot: 'primary', snd: 'shotgun', rank: 4 },
+  // ───────── Silahlar: call-of-duty projesindeki 28 silah (kurgusal adlar, gerçek atış değerleri) + 2 susturuculu ─────────
+  // [ad, sınıf, kalibre, rpm, hasar, menzil, şarjör, yedek, şarjör süresi, mod(a=otomatik,s=tek), kalça saçılması°, nişan çarpanı, tepme, gürültü, ses, model, rütbe, ek]
+  const DEG = Math.PI / 180;
+  const ROWS = {
+    rifle: ['AR-7 Vanguard', 'Piyade Tüfeği', '7,62×39 mm', 720, 30, 260, 30, 150, 1.8, 'a', 2.6, 0.1, 0.9, 70, 'rifle', 'proc:rifle', 0],
+    kr4: ['KR-4 Atmaca', 'Karabina', '5,56×45 mm NATO', 800, 27, 240, 30, 150, 1.75, 'a', 2.5, 0.1, 0.85, 68, 'rifle', 'kr4', 0],
+    mar556: ['MAR-556', 'Taarruz Tüfeği', '5,56×45 mm NATO', 800, 26, 260, 30, 150, 1.9, 'a', 2.8, 0.08, 0.85, 70, 'rifle', 'mar556', 1],
+    k8: ['K8 Bozkurt', 'Taarruz Tüfeği', '5,56×45 mm NATO', 700, 32, 300, 30, 150, 1.95, 'a', 2.9, 0.08, 0.95, 72, 'rifle', 'k8', 1],
+    ak47: ['TK-47 Köz', 'Taarruz Tüfeği', '7,62×39 mm', 600, 35, 280, 30, 150, 2.0, 'a', 2.8, 0.08, 1.15, 72, 'ak', 'ak47', 1],
+    smg: ['SMG-9 Akrep', 'Hafif Makineli', '9×19 mm', 950, 20, 160, 32, 160, 1.6, 'a', 2.0, 0.18, 0.7, 55, 'smg', 'proc:smg', 1],
+    shotgun: ['SG-12 Breaker', 'Pompalı Tüfek', '12 kalibre', 70, 17, 60, 7, 21, 2.8, 's', 1.2, 0.6, 2.4, 80, 'shotgun', 'proc:shotgun', 1, { pellets: 9 }],
+    bren2: ['BR-2 Şimşek', 'Kısa Taarruz Tüfeği', '5,56×45 mm NATO', 850, 25, 230, 30, 150, 1.75, 'a', 2.4, 0.1, 0.78, 66, 'rifle', 'bren2', 2],
+    stm556: ['ST-56 Yel', 'Taarruz Tüfeği', '5,56×45 mm NATO', 780, 30, 230, 30, 150, 1.75, 'a', 2.4, 0.1, 0.78, 66, 'rifle', 'stm556', 2],
+    adar215: ['SK-15 Sedir', 'Yarı Otomatik Karabina', '5,56×45 mm NATO', 350, 38, 300, 10, 60, 1.95, 's', 2.9, 0.08, 1.1, 72, 'rifle', 'adar215', 2],
+    mp7: ['HM-7 Kıvılcım', 'Kişisel Savunma Silahı', '4,6×30 mm', 950, 21, 160, 30, 120, 1.8, 'a', 2.1, 0.14, 0.62, 66, 'smg', 'mp7', 2],
+    ithaca37: ['PT-37 Koru', 'Pompalı Av Tüfeği', '12 kalibre', 75, 18, 60, 5, 25, 2.1, 's', 1.2, 0.6, 2.4, 80, 'shotgun', 'ithaca37', 2, { pellets: 8 }],
+    smg_s: ['SMG-9 Akrep S', 'Hafif Makineli · susturuculu', '9×19 mm', 800, 22, 100, 30, 180, 1.8, 'a', 2.2, 0.18, 0.55, 14, 'smg_s', 'proc:smg_s', 2, { silenced: true }],
+    lmg: ['MG-43', 'Hafif Makineli Tüfek', '5,56×45 mm NATO', 900, 29, 280, 100, 200, 3.8, 'a', 4.0, 0.14, 1.0, 80, 'lmg', 'mg43', 3, { mob: 0.86 }],
+    ak74: ['AK-74 Poyraz', 'Taarruz Tüfeği', '5,45×39 mm', 650, 30, 280, 30, 150, 2.0, 'a', 2.8, 0.08, 0.92, 72, 'ak', 'ak74', 3],
+    g95: ['GT-95 Kalkan', 'Taarruz Tüfeği', '5,56×45 mm NATO', 750, 29, 300, 30, 150, 2.05, 'a', 2.9, 0.08, 0.95, 72, 'rifle', 'g95', 3],
+    kt9: ['KT-9 Kaplan', 'Taktik Nişancı Tüfeği', '6,8×43 mm SPC', 360, 58, 380, 20, 80, 2.15, 's', 4.5, 0.02, 1.8, 85, 'dmr', 'kt9', 3, { adsFov: 0.3 }],
+    ar10t: ['NT-10 Kartal', 'Muharebe Tüfeği', '7,62×51 mm NATO', 300, 47, 400, 20, 60, 1.95, 's', 3.2, 0.035, 1.65, 72, 'dmr', 'ar10t', 3],
+    uar10: ['UN-10 Vaşak', 'Dürbünlü Nişancı Tüfeği', '7,62×51 mm NATO', 280, 52, 450, 20, 60, 1.95, 's', 3.6, 0.025, 1.75, 72, 'dmr', 'uar10', 3, { adsFov: 0.25 }],
+    m4super90: ['YO-90 Fırtına', 'Yarı Otomatik Av Tüfeği', '12 kalibre', 220, 15, 60, 7, 28, 2.8, 's', 1.2, 0.6, 2.4, 80, 'shotgun', 'm4super90', 3, { pellets: 8 }],
+    mk4: ['MK-4 Doğan', 'Karabina · Holografik', '5,56×45 mm NATO', 820, 26, 250, 30, 150, 1.8, 'a', 2.6, 0.07, 0.8, 70, 'rifle', 'mk4', 4],
+    awm: ['NT-33 Şahin', 'Sürgülü Keskin Nişancı', '.338 Lapua Magnum', 48, 165, 520, 5, 20, 2.6, 's', 7.5, 0, 2.6, 105, 'awm', 'awm', 4, { adsFov: 0.13 }],
+    pr10: ['PR-10 Tayfun', 'Pompalı Nişancı Tüfeği', '.44-40 WCF', 75, 92, 400, 8, 24, 3.2, 's', 4.5, 0.02, 2.0, 90, 'dmr', 'proc:dmr', 4, { adsFov: 0.22 }],
+    sniper: ['MR-82 Marret', 'Anti-Materyal Tüfek', '.50 BMG (12,7×99 mm)', 70, 145, 450, 10, 20, 2.8, 's', 7.0, 0, 3.0, 110, 'bmg', 'm82', 5, { adsFov: 0.16, mob: 0.85 }],
+    minigun: ['M134 Kasırga', 'Döner Makineli', '7,62×51 mm NATO', 1800, 40, 320, 1000, 9000, 2.4, 'a', 2.2, 1, 0.22, 95, 'minigun', 'minigun', 7, { spin: true, noAim: true, mob: 0.8 }],
+    // yan silahlar
+    pistol_s: ['P-9 Sentinel S', 'Tabanca · susturuculu', '9×19 mm', 420, 34, 70, 12, 72, 1.4, 's', 1.6, 0.25, 1.0, 9, 'pistol_s', 'proc:pistol_s', 0, { silenced: true, kind: 'pistol', slot: 'secondary' }],
+    pistol: ['P-9 Sentinel', 'Tabanca', '9×19 mm', 450, 34, 120, 17, 51, 1.3, 's', 1.8, 0.15, 1.3, 55, 'pistol', 'proc:pistol', 0, { kind: 'pistol', slot: 'secondary' }],
+    knife: ['Muharebe Bıçağı', 'Bıçak', '18 cm çelik ağız', 140, 120, 2.4, 0, 0, 0, 's', 0, 1, 0, 8, 'melee', 'knife', 0, { melee: true, kind: 'knife', slot: 'secondary', noAim: true }],
+    d50: ['D-50 Kartal', 'Ağır Tabanca', '.50 AE', 160, 62, 150, 7, 28, 1.5, 's', 2.4, 0.12, 2.2, 70, 'magnum', 'd50', 2, { kind: 'pistol', slot: 'secondary' }],
+    rpg: ['BZ-20 Yıldırım', 'Bazuka', '88,9 mm roket', 60, 280, 300, 1, 3, 2.1, 's', 3.0, 0.1, 3.2, 90, 'rocket', 'bazooka', 5, { rocket: true, kind: 'launcher', slot: 'secondary', mob: 0.9 }],
   };
+  K.WEAPONS = {};
+  for (const id in ROWS) {
+    const [name, cls, cal, rpm, dmg, range, mag, res, reload, mode, hip, ads, kick, noise, snd, model, rank, ex = {}] = ROWS[id];
+    const glb = !model.startsWith('proc:');
+    const proc = glb ? ({ smg: 'smg_s', shotgun: 'shotgun', lmg: 'lmg', bmg: 'dmr', awm: 'dmr', dmr: 'dmr', minigun: 'lmg', magnum: 'pistol', rocket: 'launcher', melee: 'knife' }[snd] || (ex.kind === 'pistol' ? 'pistol' : 'rifle')) : model.slice(5);
+    const sp = hip * DEG * 0.62;
+    const w = {
+      id, name, sub: cls + ' · ' + cal, cls, cal, dmg, rof: 60 / rpm, mag, mags: mag ? Math.max(1, Math.round(res / mag)) : 0, reload, range, noise,
+      auto: mode === 'a', spread: ex.pellets ? 0.065 : sp, aimSpread: ex.pellets ? 0.045 : Math.max(0.0007, sp * ads * 1.8), recoil: 0.014 * kick,
+      slot: ex.slot || 'primary', snd, rank, asset: glb ? model : null, proc, kind: ex.kind || 'rifle', mob: ex.mob || 1,
+      pellets: ex.pellets, silenced: !!ex.silenced, melee: !!ex.melee, rocket: !!ex.rocket, spin: !!ex.spin, noAim: !!ex.noAim,
+      zoom: ex.adsFov ? Math.max(12, Math.min(30, ex.adsFov * 95)) : undefined,
+    };
+    K.WEAPONS[id] = w;
+  }
+  K.WEAPON_TYPES = [['Taarruz tüfekleri', ['rifle', 'kr4', 'mar556', 'k8', 'ak47', 'bren2', 'stm556', 'ak74', 'g95', 'mk4', 'adar215']], ['Hafif makineli', ['smg', 'smg_s', 'mp7']], ['Pompalı', ['shotgun', 'ithaca37', 'm4super90']], ['Makineli', ['lmg', 'minigun']], ['Nişancı', ['kt9', 'ar10t', 'uar10', 'pr10', 'awm', 'sniper']], ['Yan silah / özel', ['pistol_s', 'pistol', 'd50', 'knife', 'rpg']]];
   K.GADGETS = {
     medkit: { id: 'medkit', name: 'İlk yardım çantası', desc: 'Kendini veya yakındaki yaralıyı iyileştirir (3 adet).', count: 3 },
     drone: { id: 'drone', name: 'Keşif dronu', desc: 'Havadan keşif: görülen düşmanlar 40 sn haritada işaretlenir.', count: 2, rank: 2 },
@@ -48,6 +91,7 @@
       this.nonLethal = false; this.visible = true;
       if (o.pose) this.anim.pose = o.pose;
       this.root.position.copy(this.pos); this.root.rotation.y = this.yaw;
+      if (K.glbChar && o.look && K.glbChar.forLook(o.look)) { try { K.glbChar.attach(this, o.look.glb, { tint: o.look.glbTint }); } catch (e) { console.warn('GLB asker bağlanamadı', e); } }
     }
     get eyeY() { return this.pos.y + (this.crouched ? 1.15 : 1.62); }
     get chestY() { return this.pos.y + (this.downed || !this.alive ? 0.3 : this.crouched ? 0.9 : 1.3); }
@@ -117,8 +161,10 @@
         if (d < 2.1 * 2.1 && this !== K.game.player && K.cam.mode === 'foot') { this.root.visible = false; return; }
         const cs = K.game.charShadows || 0, sh = d < cs * cs;
         if (sh !== this._sh) { this._sh = sh; this.root.traverse((o) => { if (o.isMesh) o.castShadow = sh; }); }
+        if (this !== K.game.player) K.models.weaponLOD(this.rig, d < 22 * 22);
       }
       K.models.animate(this.rig, this.anim, dt);
+      if (this.glb) K.glbChar.sync(this);
     }
     damage(amount, src, o = {}) {
       if (!this.alive || this.invuln) return 0;
@@ -356,6 +402,57 @@
     }
     K.bus.emit('explosion', { x, y, z, radius, src });
   };
+  // ───────── Roket mermisi (bazuka) ─────────
+  C.rockets = [];
+  let rktGeo = null;
+  function rocketMesh() {
+    if (!rktGeo) {
+      const parts = [];
+      const body = new THREE.CylinderGeometry(0.042, 0.042, 0.5, 10); body.rotateX(Math.PI / 2); parts.push(body);
+      const nose = new THREE.ConeGeometry(0.042, 0.18, 10); nose.rotateX(Math.PI / 2); nose.translate(0, 0, 0.34); parts.push(nose);
+      for (let i = 0; i < 4; i++) { const f = new THREE.BoxGeometry(0.004, 0.09, 0.12); f.translate(0, 0.07, -0.2); f.rotateZ(i * Math.PI / 2); parts.push(f); }
+      rktGeo = THREE.BufferGeometryUtils ? THREE.BufferGeometryUtils.mergeGeometries(parts) : parts;
+    }
+    const mat = new THREE.MeshStandardMaterial({ color: 0x4d5440, roughness: 0.6, metalness: 0.3 });
+    if (Array.isArray(rktGeo)) { const g = new THREE.Group(); for (const p of rktGeo) g.add(new THREE.Mesh(p, mat)); return g; }
+    return new THREE.Mesh(rktGeo, mat);
+  }
+  C.fireRocket = function (src, x, y, z, dx, dy, dz, w, filter) {
+    const m = rocketMesh(); m.position.set(x, y, z); m.lookAt(x + dx, y + dy, z + dz);
+    K.game.dyn.add(m);
+    C.rockets.push({ src, x, y, z, dx, dy, dz, sp: 62, t: 0, w, m, filter });
+    // geri tepme dumanı (arkaya)
+    for (let i = 0; i < 14; i++) FX.smoke.spawn(x - dx * 0.9, y - dy * 0.9, z - dz * 0.9, -dx * (4 + Math.random() * 5) + (Math.random() - 0.5) * 2, -dy * 4 + Math.random(), -dz * (4 + Math.random() * 5) + (Math.random() - 0.5) * 2, 1.4 + Math.random(), 0.4, 2.2, 0.72, 0.7, 0.66, 0.55, 2.2, -0.15);
+  };
+  C.updateRockets = function (dt) {
+    for (let i = C.rockets.length - 1; i >= 0; i--) {
+      const r = C.rockets[i]; r.t += dt;
+      r.sp = Math.min(95, r.sp + 40 * dt);
+      const step = r.sp * dt;
+      const h = K.world.raycast(r.x, r.y, r.z, r.dx, r.dy, r.dz, step);
+      let best = h ? h.d : step, hit = !!h;
+      for (const a of K.game.actors) {
+        if (a === r.src || !a.alive || a.vehicle || a.removed || (r.filter && !r.filter(a))) continue;
+        const t = rayActor(r.x, r.y, r.z, r.dx, r.dy, r.dz, a, best); if (t > 0 && t < best) { best = t; hit = true; }
+      }
+      for (const v of K.game.vehicles) {
+        if (r.src && r.src.vehicle === v) continue;
+        const t = v.rayHit(r.x, r.y, r.z, r.dx, r.dy, r.dz, best); if (t > 0 && t < best) { best = t; hit = true; }
+      }
+      const nx = r.x + r.dx * best, ny = r.y + r.dy * best, nz = r.z + r.dz * best;
+      if (hit || r.t > 4.5) {
+        if (r.m.parent) r.m.parent.remove(r.m);
+        C.rockets.splice(i, 1);
+        C.explode(nx - r.dx * 0.25, ny - r.dy * 0.25, nz - r.dz * 0.25, 7.5, r.w.dmg, r.src, { size: 1.15 });
+        continue;
+      }
+      r.x = nx; r.y = ny; r.z = nz;
+      r.m.position.set(nx, ny, nz);
+      FX.smoke.spawn(nx - r.dx * 0.35, ny - r.dy * 0.35, nz - r.dz * 0.35, (Math.random() - 0.5) * 0.5, 0.2 + Math.random() * 0.3, (Math.random() - 0.5) * 0.5, 1.1 + Math.random() * 0.6, 0.18, 1.3, 0.8, 0.78, 0.74, 0.5, 1.4, -0.25);
+      FX.sparks.spawn(nx - r.dx * 0.32, ny - r.dy * 0.32, nz - r.dz * 0.32, -r.dx * 3, -r.dy * 3, -r.dz * 3, 0.07, 0.32, 0.08, 1, 0.62, 0.22, 1);
+    }
+  };
+  C.clearRockets = function () { for (const r of C.rockets) if (r.m.parent) r.m.parent.remove(r.m); C.rockets.length = 0; };
   C.flashbang = function (x, y, z, src) {
     FX.sparks.spawn(x, y + 0.5, z, 0, 0, 0, 0.15, 6, 14, 1, 1, 1, 1);
     FX.boomLight.position.set(x, y + 1, z); FX.boomLight.intensity = 600; FX.boomT = 0.2;

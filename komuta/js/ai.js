@@ -325,7 +325,7 @@
   // ═════════ DÜŞMAN ═════════
   class Enemy extends K.Actor {
     constructor(o) {
-      super(Object.assign({ team: 'enemy', look: K.models.LOOKS[o.lookId || 'enemy'], weapon: o.weapon === undefined ? 'rifle' : o.weapon, hp: o.hp || 100 }, o));
+      super(Object.assign({ team: 'enemy', look: K.models.LOOKS[o.lookId || 'enemy'], weapon: o.weapon === undefined ? (o.lookId === 'enemyHeavy' ? 'ak74' : o.lookId === 'special' ? 'mp7' : 'ak47') : o.weapon, hp: o.hp || 100 }, o));
       this.faction = o.faction || 'mafia';
       this.state = o.state || (o.patrol ? 'patrol' : 'guard');
       this.patrol = o.patrol || null; this.pi = 0; this.waitT = Math.random() * 2;

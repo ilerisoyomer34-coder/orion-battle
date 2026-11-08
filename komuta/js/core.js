@@ -242,7 +242,9 @@ window.K = window.K || {};
     },
     shot(kind, pos) {
       if (!this.ok) return;
-      const loud = { pistol_s: 0.25, smg_s: 0.3, rifle: 1, dmr: 1.2, lmg: 1, shotgun: 1.2, enemy: 0.9, tank: 2, mg: 1 }[kind] || 1;
+      if (kind === 'melee') { const sp0 = this.spatial(pos, 20); if (sp0) this.noiseHit(this.out(sp0), { dur: 0.12, type: 'highpass', f: 2500, vol: 0.25 }); return; }
+      if (kind === 'rocket') { const sp1 = this.spatial(pos, 200); if (sp1) { const o1 = this.out(sp1); this.noiseHit(o1, { dur: 1.1, type: 'bandpass', f: 900, f2: 300, q: 0.6, vol: 0.9 }); this.tone(o1, { f: 120, f2: 60, dur: 0.4, vol: 0.5 }); } return; }
+      const loud = { pistol_s: 0.25, smg_s: 0.3, rifle: 1, ak: 1.05, smg: 0.8, pistol: 0.7, magnum: 1.1, bmg: 1.7, awm: 1.45, dmr: 1.2, lmg: 1, minigun: 0.9, shotgun: 1.2, enemy: 0.9, tank: 2, mg: 1 }[kind] || 1;
       const sp = this.spatial(pos, loud < 0.5 ? 40 : 260); if (!sp) return;
       const o = this.out(sp);
       if (loud < 0.5) {
@@ -405,7 +407,7 @@ window.K = window.K || {};
         rescued: [],         // kurtarılan karakter kimlikleri
         decisions: {},       // anlatı kararları
         cosmetics: ['std'], cosmetic: 'std',
-        loadout: { outfit: 'tactical', primary: 'rifle', secondary: 'pistol_s', gadget: 'medkit', squad: [] },
+        loadout: { outfit: 'tactical', primary: 'kr4', secondary: 'pistol_s', gadget: 'medkit', squad: [] },
         stats: { kills: 0, arrests: 0, takedowns: 0, civSaved: 0, civLost: 0, playTime: 0, missionsDone: 0 },
         settings: {
           quality: 'auto', sens: 1, invertY: false, fov: 70, vol: 0.8, sfxVol: 0.9, musVol: 0.45,

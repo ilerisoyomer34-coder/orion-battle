@@ -91,6 +91,14 @@
   M.WEAPONS = {
     pistol_s: { grip: new V3(0, -0.05, -0.01), fore: new V3(0.03, -0.06, 0.0), muzzle: new V3(0, 0.025, 0.34), kind: 'pistol',
       build(P) { P.box(0.032, 0.04, 0.19, GUN, 'METAL', 0, 0.02, 0.05); P.box(0.03, 0.11, 0.045, GUN2, 'FLAT', 0, -0.045, -0.01, 0.25); P.cyl(0.016, 0.016, 0.14, 8, 0x1d1e20, 'METAL', 0, 0.025, 0.21, Math.PI / 2); } },
+    pistol: { grip: new V3(0, -0.05, -0.01), fore: new V3(0.03, -0.06, 0.0), muzzle: new V3(0, 0.025, 0.16), kind: 'pistol',
+      build(P) { P.box(0.032, 0.042, 0.19, GUN, 'METAL', 0, 0.02, 0.05); P.box(0.03, 0.11, 0.045, GUN2, 'FLAT', 0, -0.045, -0.01, 0.25); } },
+    smg: { grip: new V3(0, -0.07, -0.02), fore: new V3(0, -0.05, 0.12), muzzle: new V3(0, 0.02, 0.3), kind: 'rifle',
+      build(P) { P.box(0.05, 0.08, 0.28, GUN, 'METAL', 0, 0.01, 0.03); P.cyl(0.012, 0.012, 0.08, 8, 0x1c1c1c, 'METAL', 0, 0.02, 0.2, Math.PI / 2); P.box(0.03, 0.15, 0.04, GUN2, 'FLAT', 0, -0.09, 0.06); P.box(0.033, 0.1, 0.04, GUN2, 'FLAT', 0, -0.065, -0.04, 0.3); P.box(0.03, 0.05, 0.18, GUN2, 'FLAT', 0, 0.0, -0.18); } },
+    launcher: { grip: new V3(0, -0.07, -0.03), fore: new V3(0, -0.06, 0.25), muzzle: new V3(0, 0.04, 0.72), kind: 'rifle',
+      build(P) { P.cyl(0.05, 0.05, 1.35, 12, 0x4a4f3a, 'METAL', 0, 0.04, 0.05, Math.PI / 2); P.box(0.03, 0.1, 0.04, GUN2, 'FLAT', 0, -0.05, -0.03, 0.3); P.box(0.03, 0.1, 0.04, GUN2, 'FLAT', 0, -0.05, 0.25); } },
+    knife: { grip: new V3(0, -0.01, -0.02), fore: new V3(0.05, -0.12, -0.1), muzzle: new V3(0, 0, 0.22), kind: 'knife',
+      build(P) { P.box(0.025, 0.03, 0.11, 0x1a1a1a, 'FABRIC', 0, 0, -0.02); P.box(0.006, 0.035, 0.18, 0xb8bcc0, 'METAL', 0, 0.004, 0.12); P.box(0.04, 0.012, 0.012, 0x333333, 'METAL', 0, 0, 0.035); } },
     rifle: { grip: new V3(0, -0.07, -0.03), fore: new V3(0, -0.04, 0.17), muzzle: new V3(0, 0.02, 0.56), kind: 'rifle',
       build(P) {
         P.box(0.055, 0.085, 0.36, GUN, 'METAL', 0, 0.01, 0.03);
@@ -148,15 +156,15 @@
 
   // ───────── Karakter görünümleri ─────────
   M.LOOKS = {
-    soldier: { uniform: 0x6b7356, region: 'CAMO', pants: 0x6b7356, vest: 0x3f4534, helmet: 0x4f5643, goggles: true, gloves: 0x2a2a28, boots: 0x2b2620, backpack: true, pouches: true },
-    steel: { uniform: 0x5a5f55, region: 'CAMO', pants: 0x5a5f55, vest: 0x2f332c, helmet: 0x30352d, mask: true, gloves: 0x222222, boots: 0x222018, heavy: true, pouches: true },
+    soldier: { glb: 'squad_woodland', uniform: 0x6b7356, region: 'CAMO', pants: 0x6b7356, vest: 0x3f4534, helmet: 0x4f5643, goggles: true, gloves: 0x2a2a28, boots: 0x2b2620, backpack: true, pouches: true },
+    steel: { glb: 'squad_desert', uniform: 0x5a5f55, region: 'CAMO', pants: 0x5a5f55, vest: 0x2f332c, helmet: 0x30352d, mask: true, gloves: 0x222222, boots: 0x222018, heavy: true, pouches: true },
     riot: { uniform: 0x2f3a4f, region: 'FABRIC', pants: 0x2b3446, vest: 0x1d2433, helmet: 0x1d2433, visor: true, gloves: 0x111111, boots: 0x161616, pouches: true },
-    special: { uniform: 0x2e3133, region: 'CAMO', pants: 0x2e3133, vest: 0x1f2122, helmet: 0x232526, goggles: true, mask: true, gloves: 0x151515, boots: 0x151515, pouches: true },
-    elite: { uniform: 0x5d5a46, region: 'CAMO', pants: 0x5d5a46, vest: 0x3e3b2d, beret: 0x6e1420, gloves: 0x2a2a28, boots: 0x2b2620, pouches: true, backpack: true },
+    special: { glb: 'squad_forest', uniform: 0x2e3133, region: 'CAMO', pants: 0x2e3133, vest: 0x1f2122, helmet: 0x232526, goggles: true, mask: true, gloves: 0x151515, boots: 0x151515, pouches: true },
+    elite: { glb: 'squad_forest', uniform: 0x5d5a46, region: 'CAMO', pants: 0x5d5a46, vest: 0x3e3b2d, beret: 0x6e1420, gloves: 0x2a2a28, boots: 0x2b2620, pouches: true, backpack: true },
     agent: { uniform: 0x2c3540, region: 'FABRIC', pants: 0x2a2d33, jacket: true, hair: 0x2b1e15, boots: 0x1a1612, shirt: 0xe8e4dc },
     playerCivil: { uniform: 0x3b3f48, region: 'FABRIC', pants: 0x2b2f38, jacket: true, hair: 0x241a12, boots: 0x18140f, shirt: 0xdcd8cf },
-    enemy: { uniform: 0x2a2a2c, region: 'FABRIC', pants: 0x26272b, vest: 0x1b1b1d, armband: 0x9a1b1b, hair: 0x18120d, boots: 0x111111, cap: 0x161616, gloves: 0x111111 },
-    enemyHeavy: { uniform: 0x2a2a2c, region: 'CAMO', pants: 0x26272b, vest: 0x161618, armband: 0x9a1b1b, helmet: 0x1b1b1d, mask: true, boots: 0x111111, gloves: 0x111111, pouches: true },
+    enemy: { glb: 'soldier', glbTint: 0xa8a8a8, uniform: 0x2a2a2c, region: 'FABRIC', pants: 0x26272b, vest: 0x1b1b1d, armband: 0x9a1b1b, hair: 0x18120d, boots: 0x111111, cap: 0x161616, gloves: 0x111111 },
+    enemyHeavy: { glb: 'soldier', glbTint: 0x7c7c80, uniform: 0x2a2a2c, region: 'CAMO', pants: 0x26272b, vest: 0x161618, armband: 0x9a1b1b, helmet: 0x1b1b1d, mask: true, boots: 0x111111, gloves: 0x111111, pouches: true },
     guard: { uniform: 0x2f3d55, region: 'FABRIC', pants: 0x232a38, cap: 0x1d2433, hair: 0x2a1d14, boots: 0x111111, shirt: 0x9fb2c9 },
     boss: { uniform: 0x1b1b1f, region: 'FABRIC', pants: 0x1b1b1f, jacket: true, shirt: 0x7a1d1d, hair: 0x5a5a5a, boots: 0x0d0d0d },
     pilot: { uniform: 0x5b6150, region: 'FABRIC', pants: 0x5b6150, helmet: 0x4a5040, visor: true, gloves: 0x3a3a35, boots: 0x2b2620 },
@@ -287,10 +295,55 @@
     return rig;
   };
 
-  M.setWeapon = function (rig, id) {
+  // GLB silah: köken sağ el kavrama noktası, ileri -z (call-of-duty hazırlama düzeni) → oyunun +z düzenine çevrilir
+  const GLB_OFF = new V3(0, -0.035, -0.03);
+  const glbDefs = {};
+  function glbDef(W) {
+    if (glbDefs[W.id]) return glbDefs[W.id];
+    const d = K.ASSETDATA.weapons[W.asset], p = d.points;
+    const tr = (a, dy = 0) => new V3(-a[0] + GLB_OFF.x, a[1] + GLB_OFF.y + dy, -a[2] + GLB_OFF.z);
+    const kind = W.kind === 'launcher' ? 'rifle' : W.kind;
+    const def = {
+      grip: new V3(0, GLB_OFF.y - 0.03, GLB_OFF.z), kind,
+      fore: p.leftHand ? tr(p.leftHand, kind === 'pistol' ? -0.02 : -0.03) : new V3(0.05, -0.12, -0.1),
+      muzzle: tr(p.muzzle || p.tip || [0, 0, -0.5]), scope: !!W.zoom,
+    };
+    glbDefs[W.id] = def;
+    return def;
+  }
+  M.gunDef = function (rig) { return rig.gunDef || (rig.weapon ? M.WEAPONS[rig.weapon] : null); };
+  M.setWeapon = function (rig, id, forceProc) {
     if (rig.gunMesh) { rig.gun.remove(rig.gunMesh); rig.gunMesh = null; }
-    rig.weapon = id || null;
-    if (id) { rig.gunMesh = M.weaponMesh(id); rig.gun.add(rig.gunMesh); }
+    rig.weapon = id || null; rig.gunGLB = false; rig.gunDef = null; rig.gunSpin = null;
+    if (!id) return;
+    const W = K.WEAPONS[id];
+    if (W && W.asset && K.assets && K.assets.weaponReady(W.asset) && !forceProc) {
+      const wrap = new THREE.Group();
+      const c = K.assets.weaponClone(W.asset);
+      c.rotation.y = Math.PI; c.position.copy(GLB_OFF); wrap.add(c);
+      let spin = null; c.traverse((o) => { if (o.name === 'spin' && !spin) spin = o; });
+      if (spin) {
+        // namlu demeti kendi ekseni etrafında dönsün: pivotu ağın merkezine taşı
+        const bb = new THREE.Box3().setFromObject(spin), ctr = bb.getCenter(new V3());
+        c.updateMatrixWorld(true); spin.parent.worldToLocal(ctr);
+        const piv = new THREE.Group(); piv.position.set(ctr.x, ctr.y, 0);
+        spin.parent.add(piv); piv.add(spin); spin.position.set(-ctr.x, -ctr.y, 0);
+        rig.gunSpin = piv;
+      }
+      rig.gunMesh = wrap; rig.gunGLB = true; rig.gunDef = glbDef(W);
+    } else {
+      if (W && W.asset && K.assets) K.assets.requestWeapon(W.asset);
+      const pid = W ? W.proc : id;
+      rig.gunMesh = M.weaponMesh(pid); rig.gunDef = M.WEAPONS[pid] || M.WEAPONS.rifle;
+    }
+    rig.gun.add(rig.gunMesh);
+  };
+  // uzaktaki askerde hafif prosedürel model, yakında GLB
+  M.weaponLOD = function (rig, near) {
+    if (!rig.weapon) return;
+    const W = K.WEAPONS[rig.weapon]; if (!W || !W.asset) return;
+    if (near && !rig.gunGLB && K.assets.weaponReady(W.asset)) M.setWeapon(rig, rig.weapon);
+    else if (!near && rig.gunGLB) M.setWeapon(rig, rig.weapon, true);
   };
   M.addShield = function (rig) {
     const P = new Parts();
@@ -397,8 +450,8 @@
     // ── kollar
     const armed = st.armed && R.weapon && !['dead', 'downed', 'surrender', 'cuffed', 'salute', 'sit', 'cower', 'kneel'].includes(pose);
     if (R.gunMesh) R.gunMesh.visible = !!(R.weapon && st.showWeapon !== false && pose !== 'surrender' && pose !== 'cuffed');
-    const W = R.weapon ? M.WEAPONS[R.weapon] : null;
-    const isPistol = W && W.kind === 'pistol';
+    const W = M.gunDef(R);
+    const isPistol = W && (W.kind === 'pistol' || W.kind === 'knife');
     if (armed) {
       // silah yuvası hedefi
       let gx, gy, gz, rx, ry, rz = 0;

@@ -107,7 +107,8 @@
       if (!v) {
         const w = P.w;
         set('wName', w ? w.def.name : '—'); set('wSub', w ? (P.holstered ? 'KILIFTA (H)' : w.def.sub) : '');
-        set('ammoBig', w ? (P.reloadT >= 0 ? '···' : String(w.ammo)) : '-'); set('ammoRes', w ? '/ ' + w.reserve : '');
+        set('ammoBig', w ? (w.def.melee ? '∞' : P.reloadT >= 0 ? '···' : String(w.ammo)) : '-'); set('ammoRes', w && !w.def.melee ? '/ ' + w.reserve : '');
+        if (w && w.def.spin && !P.holstered) set('wSub', P.spinUp >= 1 ? 'NAMLULAR DÖNÜYOR' : P.spinUp > 0 ? 'Dönüş: %' + Math.round(P.spinUp * 100) : w.def.sub + ' · ateş tuşunu basılı tut');
         set('stance', P.crouched ? 'ÇÖMELMİŞ' : P.sprinting ? 'KOŞU' : 'AYAKTA');
         const gd = P.gadget; set('gadget', gd ? `[G] ${gd.def.name}${gd.id === 'nvg' ? (P.nvg ? ' (AÇIK)' : '') : ' ×' + gd.count}` : '');
       } else {
@@ -618,7 +619,17 @@
         cg.appendChild(b);
       }
       body.appendChild(cg);
-      body.appendChild(h('div', { class: 'hq-note small' }, 'Kurgu notu: şehir, teşkilat, Siyah Akrep örgütü, birlik ve kişi adları kurgusaldır. Bu oyun, "KOMUTA: Gizli Operasyon" tasarım belgesinin tarayıcıda çalışan dikey dilim uyarlamasıdır; modeller prosedürel olarak üretilmiştir.'));
+      // ── Lisanslar (CC BY 4.0 atıf zorunluluğu)
+      body.appendChild(h('h3', { class: 'hq-sec' }, 'LİSANSLAR VE ATIFLAR'));
+      const cr = K.assets.credits();
+      const lt = h('div', { class: 'lic' });
+      for (const c of cr) {
+        const a = h('a', { href: c.source, target: '_blank', rel: 'noopener' }, c.title);
+        lt.appendChild(h('div', { class: 'lic-row' }, h('b', null, c.what), h('span', null, '“', a, '” — ', String(c.author || '').replace(/\s*\(https?:[^)]*\)/, ''), ' · ', String(c.license || '').replace(/\s*\(https?:[^)]*\)/, '')), c.change ? h('small', null, 'Değişiklik: ' + c.change) : null));
+      }
+      body.appendChild(lt);
+      body.appendChild(h('div', { class: 'hq-note small' }, 'Kendi modelleri (call-of-duty projesi): MAR-556, MG-43, MR-82, D-50 ve M134 silah modelleri. Düşman askeri modeli Adobe Mixamo karakteridir (Vanguard); Mixamo kullanım koşullarına tabidir — oyun içinde kullanılabilir, ham dosya olarak ayrıca dağıtılamaz. Sketchfab modelleri CC BY 4.0 ile lisanslıdır; atıflar yukarıdadır.'));
+      body.appendChild(h('div', { class: 'hq-note small' }, 'Kurgu notu: şehir, teşkilat, Siyah Akrep örgütü, birlik ve kişi adları kurgusaldır. Silah adları kurgusaldır. Bu oyun, "KOMUTA: Gizli Operasyon" tasarım belgesinin tarayıcıda çalışan uyarlamasıdır.'));
     },
     // ─────────── Brifing + hazırlık
     briefing(def) {
@@ -631,7 +642,7 @@
       const maxSq = Math.min(def.squadMax || 0, K.prog.squadMax());
       const forced = def.forceOutfit;
       const outfit = forced || (K.prog.outfitUnlocked(lo.outfit) ? lo.outfit : 'tactical');
-      const sel = { outfit, primary: K.prog.weaponUnlocked(lo.primary) ? lo.primary : 'rifle', secondary: 'pistol_s', gadget: K.prog.gadgetUnlocked(lo.gadget) ? lo.gadget : 'medkit', squad: (lo.squad || []).filter((id) => K.ROSTER.find((r) => r.id === id && K.prog.unitUnlocked(r.unit))).slice(0, maxSq) };
+      const sel = { outfit, primary: K.prog.weaponUnlocked(lo.primary) ? lo.primary : 'kr4', secondary: K.prog.weaponUnlocked(lo.secondary) && K.WEAPONS[lo.secondary].slot === 'secondary' ? lo.secondary : 'pistol_s', gadget: K.prog.gadgetUnlocked(lo.gadget) ? lo.gadget : 'medkit', squad: (lo.squad || []).filter((id) => K.ROSTER.find((r) => r.id === id && K.prog.unitUnlocked(r.unit))).slice(0, maxSq) };
       if (sel.squad.length < maxSq) for (const r of K.prog.rosterAvailable()) { if (sel.squad.length >= maxSq) break; if (!sel.squad.includes(r.id)) sel.squad.push(r.id); }
       this.briefSel = sel;
       const b = $('brief');
@@ -643,19 +654,27 @@
         </div><div class="br-load"><h2>HAZIRLIK</h2><div id="loadForm"></div>
         <div class="br-btns"><button class="ghost" id="brBack">‹ Merkez</button><button id="brStart">OPERASYONU BAŞLAT ›</button></div></div></div>`;
       const form = $('loadForm');
-      const group = (title, items, key, disabledAll) => {
+      // sections: [[alt başlık | null, öğeler]] — aynı anahtardaki tüm satırlar tek seçim gibi davranır
+      const group = (title, items, key, disabledAll, sections) => {
         const g = h('div', { class: 'lg' }, h('h4', null, title));
-        const row = h('div', { class: 'lrow' });
-        for (const it of items) {
-          const un = it.un && !disabledAll;
-          const btn = h('button', { class: 'lopt' + (sel[key] === it.id ? ' on' : '') + (un ? '' : ' locked'), title: it.desc || '' }, h('b', null, it.name), h('small', null, un ? (it.sub || '') : (it.lock || 'Kilitli')));
-          if (un) btn.onclick = () => { sel[key] = it.id; K.audio.ui(); row.querySelectorAll('.lopt').forEach((x) => x.classList.remove('on')); btn.classList.add('on'); };
-          row.appendChild(btn);
+        for (const [sub, list] of sections || [[null, items]]) {
+          if (sub) g.appendChild(h('div', { class: 'lsub' }, sub));
+          const row = h('div', { class: 'lrow' });
+          for (const it of list) {
+            const un = it.un && !disabledAll;
+            const btn = h('button', { class: 'lopt' + (sel[key] === it.id ? ' on' : '') + (un ? '' : ' locked'), title: it.desc || '', 'data-key': key }, h('b', null, it.name), h('small', null, un ? (it.sub || '') : (it.lock || 'Kilitli')));
+            if (un) btn.onclick = () => { sel[key] = it.id; K.audio.ui(); form.querySelectorAll('.lopt[data-key="' + key + '"]').forEach((x) => x.classList.remove('on')); btn.classList.add('on'); };
+            row.appendChild(btn);
+          }
+          g.appendChild(row);
         }
-        g.appendChild(row); form.appendChild(g);
+        form.appendChild(g);
       };
+      const wItem = (w) => ({ id: w.id, name: w.name, sub: w.cls + ' · ' + (w.melee ? 'yakın dövüş' : w.rocket ? 'patlayıcı' : Math.round(60 / w.rof) + ' atış/dk'), desc: `${w.name} — ${w.sub}. Hasar ${w.dmg}, menzil ${w.range} m${w.mag ? ', şarjör ' + w.mag : ''}.`, un: K.prog.weaponUnlocked(w.id), lock: '🔒 ' + K.RANKS[w.rank || 0].name });
       group('Üniforma' + (forced ? ' (görev gereği sabit)' : ''), Object.values(K.OUTFITS).map((o) => ({ id: o.id, name: o.name, sub: `Zırh ${o.armor}`, desc: o.desc, un: (forced ? o.id === forced : K.prog.outfitUnlocked(o.id)), lock: forced ? 'Görev gereği' : K.RANKS[o.rank || 0].name })), 'outfit');
-      group('Ana silah', Object.values(K.WEAPONS).filter((w) => w.slot === 'primary').map((w) => ({ id: w.id, name: w.name, sub: w.sub, un: K.prog.weaponUnlocked(w.id), lock: K.RANKS[w.rank || 0].name })), 'primary', forced === 'civil' || def.noWeapons);
+      const priSecs = K.WEAPON_TYPES.map(([t, ids]) => [t, ids.map((id) => K.WEAPONS[id]).filter((w) => w && w.slot === 'primary').map(wItem)]).filter((s) => s[1].length);
+      group('Ana silah', null, 'primary', forced === 'civil' || def.noWeapons, priSecs);
+      group('Yan silah', Object.values(K.WEAPONS).filter((w) => w.slot === 'secondary').map(wItem).map((it) => (forced === 'civil' && K.WEAPONS[it.id].kind === 'launcher' ? Object.assign(it, { un: false, lock: 'Sivil görünümde olmaz' }) : it)), 'secondary', def.noWeapons);
       group('Ekipman', Object.values(K.GADGETS).map((g) => ({ id: g.id, name: g.name, sub: g.desc.slice(0, 38) + '…', desc: g.desc, un: K.prog.gadgetUnlocked(g.id), lock: K.RANKS[g.rank || 0].name })), 'gadget');
       // ekip
       const sg = h('div', { class: 'lg' }, h('h4', null, `Ekip (${maxSq ? 'en fazla ' + maxSq : 'bu görev tek kişilik'})`));
@@ -669,7 +688,7 @@
       }
       sg.appendChild(srow); form.appendChild(sg); refresh();
       $('brBack').onclick = () => { K.audio.ui(); K.game.toHQ(); };
-      $('brStart').onclick = () => { K.audio.ui('ok'); d.loadout = Object.assign(d.loadout, { outfit: forced ? d.loadout.outfit : sel.outfit, primary: sel.primary, gadget: sel.gadget, squad: sel.squad.slice() }); K.save.write(); K.game.startMission(def.id, Object.assign({}, sel, { outfit: forced || sel.outfit })); };
+      $('brStart').onclick = () => { K.audio.ui('ok'); d.loadout = Object.assign(d.loadout, { outfit: forced ? d.loadout.outfit : sel.outfit, primary: sel.primary, secondary: sel.secondary, gadget: sel.gadget, squad: sel.squad.slice() }); K.save.write(); K.game.startMission(def.id, Object.assign({}, sel, { outfit: forced || sel.outfit })); };
     },
     // ─────────── Ayarlar
     settings(back) {

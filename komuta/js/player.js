@@ -139,7 +139,7 @@
       this.items = new Set(); this.aiming = false; this.zoomed = false; this.sprinting = false;
       this.reloadT = -1; this.swapT = -1; this.interactHold = 0; this.holdTarget = null; this.nvg = false;
       this.spreadBloom = 0; this.everDrew = false; this.lastSafePos = this.pos.clone();
-      this.regenT = 0; this.drone = null; this.actionT = 0; this.fireT = -1;
+      this.regenT = 0; this.drone = null; this.actionT = 0; this.fireT = -1; this.spinUp = 0;
     }
     get w() { return this.weapons[this.wi]; }
     setWeaponIdx(i, silent) {
@@ -169,7 +169,7 @@
       let wx = fx * mv.y + rx * mv.x, wz = fz * mv.y + rz * mv.x;
       const ml = Math.hypot(wx, wz);
       if (I.hit('crouch')) this.crouched = !this.crouched;
-      const wantAim = I.aim() && this.armed && this.swapT < 0 && G.canControl();
+      const wantAim = I.aim() && this.armed && this.swapT < 0 && G.canControl() && !(this.wdef && this.wdef.noAim);
       this.aiming = wantAim;
       this.zoomed = wantAim && !!(this.wdef && this.wdef.zoom);
       this.sprinting = I.down('sprint') && ml > 0.2 && !this.aiming && this.stamina > 1 && !this.crouched && mv.y > -0.2;
@@ -177,7 +177,8 @@
       let speed = 4.3;
       if (this.sprinting) speed = 7.0; else if (this.crouched) speed = 2.1; else if (this.aiming) speed = 2.7;
       if (ml < 0.6 && ml > 0.05 && !this.sprinting) speed *= 0.75;
-      speed *= this.outfit.speed * (this.carrying ? 0.6 : 1);
+      speed *= this.outfit.speed * (this.carrying ? 0.6 : 1) * (this.armed && this.wdef ? this.wdef.mob || 1 : 1);
+      if (this.armed && this.wdef && this.wdef.spin && this.spinUp > 0.3) speed *= 0.7;
       if (this.sprinting) this.stamina = Math.max(0, this.stamina - 18 * dt); else this.stamina = Math.min(this.maxStamina, this.stamina + 14 * dt);
       const tvx = ml > 0.01 ? wx / Math.max(1, ml) * speed : 0, tvz = ml > 0.01 ? wz / Math.max(1, ml) * speed : 0;
       const acc = this.onGround ? 14 : 3;
@@ -209,16 +210,25 @@
         if (I.hit('nvg') && this.gadget && this.gadget.id === 'nvg') { this.nvg = !this.nvg; K.ui.toast(this.nvg ? 'Gece görüş açık' : 'Gece görüş kapalı'); }
         if (I.hit('camera')) CAM.shoulder *= -1;
         // ateş
+        let spinning = false;
         if (I.fire() && this.w) {
+          const d = this.w.def;
           if (this.holstered && I.fireHit()) this.toggleHolster();
-          else if (this.armed && !this.sprinting && this.reloadT < 0 && this.swapT < 0 && this.fireT <= 0) {
-            if (this.w.def.auto || I.fireHit()) {
-              if (this.w.ammo > 0) this.shoot();
-              else if (I.fireHit()) { K.audio.empty(); this.startReload(); }
+          else if (this.armed && !this.sprinting && this.reloadT < 0 && this.swapT < 0) {
+            if (d.melee) { if (I.fireHit() && this.fireT <= 0) this.melee(); }
+            else {
+              let ready = true;
+              if (d.spin) { spinning = true; this.spinUp = Math.min(1, this.spinUp + dt / 0.6); ready = this.spinUp >= 1; }
+              if (ready && this.fireT <= 0 && (d.auto || I.fireHit())) {
+                if (this.w.ammo > 0) this.shoot();
+                else if (I.fireHit() || d.spin && this.fireT < -0.5) { K.audio.empty(); this.startReload(); this.fireT = 0.3; }
+              }
             }
           }
         }
-      }
+        if (!spinning) this.spinUp = Math.max(0, this.spinUp - dt / 1.4);
+      } else this.spinUp = Math.max(0, this.spinUp - dt / 1.4);
+      if (this.rig.gunSpin) this.rig.gunSpin.rotation.z += this.spinUp * 42 * dt;
       // yenilenme
       this.regenT -= dt;
       if (G.time - this.lastHitT > 6 && this.hp < this.maxHp * 0.6) this.hp = Math.min(this.maxHp * 0.6, this.hp + 3 * dt);
@@ -246,14 +256,44 @@
       this.reloadT = 0; K.audio.reload();
     }
     muzzlePos(out) {
-      const W = this.wdef && K.models.WEAPONS[this.weaponId];
+      const W = this.wdef && K.models.gunDef(this.rig);
       if (!W || !this.rig.gunMesh) return out.set(this.pos.x, this.pos.y + 1.4, this.pos.z);
       this.rig.gunMesh.updateWorldMatrix(true, false);
       return out.copy(W.muzzle).applyMatrix4(this.rig.gunMesh.matrixWorld);
     }
+    // bıçak: önündeki 2,4 m'lik konide en yakın düşman; arkadan ve fark etmemişken sessiz ve öldürücü
+    melee() {
+      const d = this.w.def, G = K.game;
+      this.fireT = d.rof; this.anim.fire = 1;
+      K.audio.shot('melee', this.pos);
+      const fx = Math.sin(CAM.yaw), fz = Math.cos(CAM.yaw);
+      let best = null, bd = 1e9;
+      for (const a of G.actors) {
+        if (a === this || !a.alive || a.vehicle || a.removed || a.team !== 'enemy' || a.arrested) continue;
+        const dx = a.pos.x - this.pos.x, dz = a.pos.z - this.pos.z, dist = Math.hypot(dx, dz);
+        if (dist > d.range || Math.abs(a.pos.y - this.pos.y) > 1.3) continue;
+        if (dist > 0.7 && (dx * fx + dz * fz) / dist < 0.5) continue;
+        if (!K.world.los(this.pos.x, this.pos.y + 1.1, this.pos.z, a.pos.x, a.pos.y + 1.1, a.pos.z)) continue;
+        if (dist < bd) { bd = dist; best = a; }
+      }
+      G.stats.shots++;
+      if (!best) return;
+      const efx = Math.sin(best.yaw), efz = Math.cos(best.yaw);
+      const behind = ((this.pos.x - best.pos.x) * efx + (this.pos.z - best.pos.z) * efz) / Math.max(0.01, bd) < -0.15;
+      const unaware = best.state !== 'combat' || best.stunT > 0;
+      const silent = (behind && unaware) || best.knocked || best.surrendered || best.downed;
+      best.damage(silent ? 9999 : d.dmg, this, { melee: true });
+      K.fx.impact(best.pos.x, best.pos.y + 1.2, best.pos.z, -fx, 0, -fz, 'flesh');
+      K.audio.hitmark(); K.ui.hitMarker(false);
+      if (!silent) K.bus.emit('noise', { x: this.pos.x, y: this.pos.y, z: this.pos.z, r: 9, src: this, type: 'melee' });
+      if (silent && !best.alive) K.ui.toast('Sessiz etkisiz hâle getirme', 'ok');
+      G.stats.hits++;
+      K.bus.emit('playerShot', { w: d, res: { type: 'actor', target: best, melee: true } });
+    }
     shoot() {
       const w = this.w, d = w.def, G = K.game;
       this.fireT = d.rof; w.ammo--;
+      if (d.rocket) return this.shootRocket();
       const sk = K.prog.skillVal('aim');
       const moving = Math.hypot(this.vel.x, this.vel.z) > 1;
       let spread = (this.aiming ? d.aimSpread : d.spread) * (moving ? 1.7 : 1) * (this.crouched ? 0.7 : 1) * (1 - 0.2 * sk) + this.spreadBloom * 0.02;
@@ -284,6 +324,24 @@
       G.stats.shots++;
       if (lastRes && lastRes.type === 'actor') G.stats.hits++;
       if (w.ammo === 0 && w.reserve > 0) setTimeout(() => this.alive && this.startReload(), 250);
+    }
+    shootRocket() {
+      const w = this.w, d = w.def, G = K.game;
+      const ap = CAM.aimPoint(d.range, (a) => a.team !== 'squad' && a.team !== 'player');
+      const mz = this.muzzlePos(new V3());
+      let dx = ap.x - mz.x, dy = ap.y - mz.y, dz = ap.z - mz.z; const l = Math.hypot(dx, dy, dz) || 1;
+      const sp = this.aiming ? d.aimSpread : d.spread;
+      dx = dx / l + (Math.random() - 0.5) * sp; dy = dy / l + (Math.random() - 0.5) * sp; dz = dz / l + (Math.random() - 0.5) * sp;
+      const n = Math.hypot(dx, dy, dz); dx /= n; dy /= n; dz /= n;
+      K.combat.fireRocket(this, mz.x + dx * 0.3, mz.y + dy * 0.3, mz.z + dz * 0.3, dx, dy, dz, d, (a) => a.team !== 'squad' && a.team !== 'player');
+      K.fx.muzzle(mz.x, mz.y, mz.z, 2.2);
+      K.audio.shot(d.snd, this.pos);
+      K.bus.emit('noise', { x: this.pos.x, y: this.pos.y, z: this.pos.z, r: d.noise, src: this, type: 'shot' });
+      K.bus.emit('playerShot', { w: d, res: null });
+      this.anim.fire = 1;
+      CAM.pitch += d.recoil * 0.6; CAM.shake(0.5);
+      G.stats.shots++;
+      if (w.ammo === 0 && w.reserve > 0) setTimeout(() => this.alive && this.startReload(), 450);
     }
     useGadget() {
       const g = this.gadget; if (!g) return;

@@ -170,6 +170,7 @@
 
   // ───────── Nakliye helikopteri ─────────
   M.vehHeli = function (C = 0x4c5340) {
+    if (K.assets && K.assets.heli) { try { return heliGLB(); } catch (e) { console.warn('GLB helikopter kurulamadı', e); } }
     const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
     const P = new Parts(), D = 0x262825, G = 0x18242c;
     P.box(2.3, 1.9, 4.6, C, 'CAMO', 0, 1.75, 0);
@@ -211,6 +212,51 @@
     const L = lightMesh(LP, body);
     return finish({ root, body, wheels: [], rotor, rotorBlur: blur, tailRotor: tail, door, lights: L.mesh, lightMat: L.mat, headPos: [[0, 0.8, 3.0]] });
   };
+
+  // GLB helikopter (Şahin-2, pranav27 — CC BY 4.0): pervaneler ayrık düğümler, gövde askerî yeşile boyanır
+  function heliGLB() {
+    const H = K.assets.heli, d = H.data;
+    const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
+    const scn = H.scene.clone(true);
+    scn.traverse((o) => {
+      if (!o.isMesh) return;
+      o.castShadow = true; o.receiveShadow = true;
+      const mn = o.material && o.material.name;
+      if (d.tint && d.tint[mn]) { o.material = o.material.clone(); o.material.color.set(d.tint[mn]); }
+    });
+    const holder = new THREE.Group(); holder.add(scn); body.add(holder);
+    holder.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(scn);
+    const len = box.max.z - box.min.z, s = d.length / len;
+    holder.scale.setScalar(s);
+    holder.position.set(-(box.min.x + box.max.x) / 2 * s, -box.min.y * s, -(box.min.z + box.max.z) / 2 * s);
+    holder.updateMatrixWorld(true);
+    const spinners = [];
+    const axisOf = (k) => (k === 'x' ? new THREE.Vector3(1, 0, 0) : k === 'z' ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(0, 1, 0));
+    let rotorR = 5.5, rotorY = 3.6;
+    for (const part of ['main', 'tail']) {
+      for (const name of d.rotors[part] || []) {
+        const n = scn.getObjectByName(name); if (!n) continue;
+        spinners.push({ n, base: n.quaternion.clone(), axis: axisOf(d.axes[part]), speed: part === 'main' ? 26 : 48, a: 0 });
+        if (part === 'main' && name === d.rotors.main[0]) {
+          const rb = new THREE.Box3().setFromObject(n);
+          rotorR = Math.max(rb.max.x - rb.min.x, rb.max.z - rb.min.z) / 2 / 1; rotorY = rb.max.y;
+        }
+      }
+    }
+    // gövde kutusu içinde helikopter kökü (root) çerçevesine göre yükseklik
+    const blur = new THREE.Mesh(new THREE.CircleGeometry(Math.max(3, rotorR), 32), new THREE.MeshBasicMaterial({ color: 0x111111, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }));
+    blur.rotation.x = -Math.PI / 2; blur.position.set(0, rotorY + 0.05, (box.min.z + box.max.z) / 2 * 0); body.add(blur);
+    const _q = new THREE.Quaternion();
+    const spin = (dt, r) => { for (const sp of spinners) { sp.a += r * sp.speed * dt; sp.n.quaternion.copy(sp.base).multiply(_q.setFromAxisAngle(sp.axis, sp.a)); } };
+    const LP = new Parts();
+    const L0 = d.length / 2;
+    LP.box(0.12, 0.12, 0.12, 0xff2020, 'FLAT', 1.3, 1.2, 0.6); LP.box(0.12, 0.12, 0.12, 0x20ff40, 'FLAT', -1.3, 1.2, 0.6);
+    LP.box(0.12, 0.12, 0.12, 0xffffff, 'FLAT', 0, 2.6, -L0 + 0.3); LP.box(0.28, 0.14, 0.12, 0xfff0d0, 'FLAT', 0, 0.6, L0 - 0.8);
+    const L = lightMesh(LP, body);
+    const door = new THREE.Object3D(); body.add(door);
+    return finish({ root, body, wheels: [], rotorBlur: blur, spin, door, lights: L.mesh, lightMat: L.mat, headPos: [[0, 0.6, L0]], rotorR: Math.max(3, rotorR), rotorY });
+  }
 
   // ───────── TIR çekici + dorse (kurgusal Siyah Akrep Lojistik) ─────────
   M.vehTruck = function (C = 0x5a1219) {

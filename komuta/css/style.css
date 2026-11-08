@@ -336,3 +336,7 @@ body.touchmode .tb { font-size: 1.9vmin; }
   .wh-it { width: 112px; padding: 6px 4px; } .wh-it b { font-size: 11px; }
   .wh-center { width: 120px; height: 120px; }
 }
+.lsub { font-size: 10px; color: var(--muted); opacity: .75; letter-spacing: .1em; text-transform: uppercase; margin: 8px 0 4px; }
+.lic { display: grid; gap: 6px; }
+.lic-row { font-size: 12px; line-height: 1.45; padding: 6px 8px; background: rgba(255,255,255,0.03); border-left: 2px solid var(--line); }
+.lic-row b { display: block; font-size: 11px; color: var(--amber2); letter-spacing: .05em; } .lic-row a { color: #cfd8e3; } .lic-row small { display: block; color: var(--muted); font-size: 10px; }
