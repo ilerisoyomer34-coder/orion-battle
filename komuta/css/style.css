@@ -312,9 +312,9 @@ body.touchmode #objective { top: 4px; min-width: 0; max-width: 38vw; }
 body.touchmode #objMain div { font-size: 11px; padding: 3px 8px; }
 body.touchmode #toasts { top: 70px; width: 44vw; }
 body.touchmode .toast { font-size: 11px; padding: 4px 10px; }
-body.touchmode #hint { top: 52px; left: 50%; max-width: 44vw; font-size: 11px; transform: translate(-50%, -10px); }
+body.touchmode #hint { top: auto; bottom: 36vmin; left: 50%; max-width: 40vw; font-size: 11px; transform: translate(-50%, 10px); }
 body.touchmode #hint.show { transform: translate(-50%, 0); }
-body.touchmode #titleCard { bottom: auto; top: 24vh; left: 50%; transform: translateX(-50%); white-space: nowrap; }
+body.touchmode #titleCard { bottom: auto; top: 30vh; left: 50%; transform: translateX(-50%); white-space: nowrap; }
 body.touchmode .tc-no { font-size: 22px; } body.touchmode .tc-sub { font-size: 12px; }
 body.touchmode #prompt { top: 40%; }
 body.touchmode .wh-row { top: calc(50% + 200px); }
@@ -340,3 +340,20 @@ body.touchmode .tb { font-size: 1.9vmin; }
 .lic { display: grid; gap: 6px; }
 .lic-row { font-size: 12px; line-height: 1.45; padding: 6px 8px; background: rgba(255,255,255,0.03); border-left: 2px solid var(--line); }
 .lic-row b { display: block; font-size: 11px; color: var(--amber2); letter-spacing: .05em; } .lic-row a { color: #cfd8e3; } .lic-row small { display: block; color: var(--muted); font-size: 10px; }
+
+/* ── PWA / telefon ── */
+#rotate { display: none; position: fixed; inset: 0; z-index: 9999; background: var(--navy); color: var(--text); align-items: center; justify-content: center; text-align: center; padding: max(16px, env(safe-area-inset-top)) 16px; }
+body.portrait #rotate { display: flex; }
+.rot-in b { display: block; font-size: 20px; letter-spacing: .08em; margin-top: 18px; } .rot-in small { color: var(--muted); font-size: 13px; }
+.rot-ph { width: 54px; height: 92px; border: 3px solid var(--amber); border-radius: 10px; margin: 0 auto; animation: rotph 2.2s ease-in-out infinite; }
+@keyframes rotph { 0%, 25% { transform: rotate(0); } 55%, 100% { transform: rotate(-90deg); } }
+@media (prefers-reduced-motion: reduce) { .rot-ph { animation: none; transform: rotate(-90deg); } }
+#iosHint { position: fixed; inset: 0; z-index: 9998; background: rgba(5,10,18,0.82); display: flex; align-items: center; justify-content: center; padding: 16px; }
+#iosHint.hidden { display: none; }
+.ios-in { max-width: 420px; background: var(--panel, #142033); border: 1px solid var(--line); padding: 18px 20px; font-size: 14px; line-height: 1.6; }
+.ios-in ol { margin: 10px 0 14px 20px; } .ios-share { color: var(--amber2); font-weight: 700; }
+#offlineTxt { color: var(--amber2); }
+body.standalone #btnFull { display: none; }
+/* telefon: dokunmatik düğmeler güvenli alanların dışında kalsın */
+body.touchmode #touch { top: env(safe-area-inset-top, 0px); right: env(safe-area-inset-right, 0px); bottom: env(safe-area-inset-bottom, 0px); left: env(safe-area-inset-left, 0px); }
+body.touchmode #hud { left: env(safe-area-inset-left, 0px); right: env(safe-area-inset-right, 0px); }

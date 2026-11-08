@@ -413,7 +413,7 @@ window.K = window.K || {};
         stats: { kills: 0, arrests: 0, takedowns: 0, civSaved: 0, civLost: 0, playTime: 0, missionsDone: 0 },
         settings: {
           quality: 'auto', sens: 1, invertY: false, fov: 70, vol: 0.8, sfxVol: 0.9, musVol: 0.45,
-          voice: false, touch: 'auto', showFps: false, traffic: true, aimAssist: true,
+          voice: false, touch: 'auto', showFps: false, traffic: true, aimAssist: true, vibrate: true, autoFull: true,
         },
         tutorial: {},
         campaignDone: false,

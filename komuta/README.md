@@ -20,6 +20,18 @@ python3 -m http.server 8000
 
 GitHub Pages açıksa oyun `https://<kullanıcı>.github.io/orion-battle/komuta/` adresinden oynanır. Oyun bir PWA'dır: telefonda "Ana ekrana ekle" ile tam ekran ve çevrimdışı çalışır.
 
+
+### Telefona uygulama olarak kurma (PWA)
+
+Oyun bir PWA'dır: ana ekrana eklenince tam ekran, yatay ve tarayıcı çubuğu olmadan açılır. Açılışta yüklenen modeller cihazda saklanır; sonraki açılışlar hızlıdır ve internet olmadan da oynanır.
+
+- **Android (Chrome):** Oyunu https adresinden aç → ana menüde **⤓ Ana ekrana ekle** düğmesi (veya Chrome menüsü → Uygulamayı yükle).
+- **iPhone / iPad (Safari):** Ana menüde **⤓ Ana ekrana ekle** → Paylaş → Ana Ekrana Ekle.
+- Kurulu uygulama ilk açılışta silah modellerini de arka planda indirir; menüde "✓ Çevrimdışı oynanabilir" yazınca internet gerekmez.
+- Telefonda grafik kalitesi otomatik olarak **Düşük** seçilir: gölge yok, dokular 512 piksele küçültülür, uzaktaki eşyalar daha erken gizlenir.
+- Görev başlarken telefon tam ekrana ve yatay kilide geçer, ekran kararmaz; isabet alınca ve ağır silahlarda titreşim olur (Ayarlar'dan kapatılabilir). Telefon dikey tutulursa "yatay çevirin" uyarısı çıkar.
+- PWA kurulumu için oyunun **https** ile (ör. GitHub Pages) sunulması gerekir; claude.ai yayın sayfası gibi gömülü sayfalarda kurulum ve çevrimdışı önbellek çalışmaz.
+
 ## Kontroller
 
 | Bilgisayar | Eylem | Komuta | Eylem |

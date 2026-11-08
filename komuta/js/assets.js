@@ -24,10 +24,34 @@
       }
       return this.cache[url];
     },
+    // düşük kalitede (telefon) dokuları küçült: GPU belleği ~4 kat azalır
+    texMax() { const q = K.game && K.game.qualityLevel ? K.game.qualityLevel() : 'high'; return q === 'low' ? 512 : q === 'med' ? 1024 : 4096; },
+    shrinkTex(t, max) {
+      if (!t || !t.image || t.userData.shrunk) return;
+      const im = t.image, w = im.width || im.naturalWidth, h = im.height || im.naturalHeight;
+      if (!w || !h || Math.max(w, h) <= max) return;
+      const k = max / Math.max(w, h), c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
+      try { c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); } catch (e) { return; }
+      if (im.close) try { im.close(); } catch (e) { /* ImageBitmap zaten kapalı */ }
+      t.image = c; t.userData.shrunk = true; t.needsUpdate = true;
+    },
+    shrink(root) {
+      const max = this.texMax(); if (max >= 4096 || !root) return;
+      const seen = new Set();
+      root.traverse((o) => {
+        if (!o.isMesh) return;
+        for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
+          if (!m) continue;
+          for (const k of ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'emissiveMap', 'aoMap', 'alphaMap']) { const t = m[k]; if (t && !seen.has(t)) { seen.add(t); this.shrinkTex(t, max); } }
+        }
+      });
+    },
     texture(url, srgb) {
       const key = url + (srgb ? '#s' : '');
       if (!this.tex[key]) {
-        const t = this.tl.load(url);
+        const max = this.texMax();
+        const t = this.tl.load(url, (tt) => this.shrinkTex(tt, max));
         t.flipY = false;                      // glTF UV düzeni
         if (srgb) t.colorSpace = THREE.SRGBColorSpace;
         t.anisotropy = 4;
@@ -61,9 +85,9 @@
         const d = C[id];
         try {
           const g = await this.loadGLB(d.file);
-          this.applyMaterials(g.scene, d.materials);
+          this.applyMaterials(g.scene, d.materials); this.shrink(g.scene);
           let lod = null;
-          if (d.lod) { try { const gl = await this.loadGLB(d.lod); this.applyMaterials(gl.scene, d.materials); lod = gl.scene; } catch (e) { lod = null; } }
+          if (d.lod) { try { const gl = await this.loadGLB(d.lod); this.applyMaterials(gl.scene, d.materials); this.shrink(gl.scene); lod = gl.scene; } catch (e) { lod = null; } }
           this.chars[id] = { id, scene: g.scene, lod, data: d };
           K.glbChar.prepare(this.chars[id]);
         } catch (e) { this.failed[id] = e.message || String(e); console.warn('Karakter modeli yüklenemedi:', id, e); }
@@ -73,7 +97,7 @@
     async loadHeli() {
       if (!this.enabled) return;
       const d = K.ASSETDATA.heli;
-      try { const g = await this.loadGLB(d.file); this.heli = { scene: g.scene, data: d }; }
+      try { const g = await this.loadGLB(d.file); this.shrink(g.scene); this.heli = { scene: g.scene, data: d }; }
       catch (e) { this.failed.heli = e.message || String(e); console.warn('Helikopter modeli yüklenemedi', e); }
     },
     // ── Silahlar (talep üzerine)
@@ -82,7 +106,7 @@
       if (!this.enabled || !asset || this.weapons[asset] || this.pendingWeapons[asset] || this.failed[asset]) return;
       const d = K.ASSETDATA.weapons[asset]; if (!d) return;
       this.pendingWeapons[asset] = this.loadGLB(d.file).then((g) => {
-        this.applyMaterials(g.scene, d.materials);
+        this.applyMaterials(g.scene, d.materials); this.shrink(g.scene);
         g.scene.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = false; const m = o.material; if (m && m.transparent && m.opacity > 0.95) m.transparent = false; } });
         this.weapons[asset] = { scene: g.scene, data: d };
         delete this.pendingWeapons[asset];

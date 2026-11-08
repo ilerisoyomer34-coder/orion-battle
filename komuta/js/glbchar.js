@@ -225,7 +225,8 @@
     // uzak model (LOD)
     const cam = K.cam && K.cam.camera;
     if (g.lod && cam) {
-      const far = cam.position.distanceToSquared(actor.pos) > 34 * 34;
+      const lodD = GC.lodDist || (GC.lodDist = K.game && K.game.qualityLevel && K.game.qualityLevel() === 'low' ? 18 : 34);
+      const far = cam.position.distanceToSquared(actor.pos) > lodD * lodD;
       const want = far ? g.lod : g.full;
       if (want !== g.cur) { R.root.remove(g.cur.wrap); R.root.add(want.wrap); g.cur = want; }
     }

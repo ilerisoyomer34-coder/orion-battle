@@ -321,6 +321,7 @@
       const rec = d.recoil * (1 - 0.3 * sk) * (this.crouched ? 0.75 : 1);
       CAM.pitch += rec; CAM.yaw += (Math.random() - 0.5) * rec * 0.6;
       CAM.shake(d.recoil * 3);
+      if (d.recoil > 0.025) K.pwa.buzz(d.recoil > 0.035 ? 22 : 12);
       G.stats.shots++;
       if (lastRes && lastRes.type === 'actor') G.stats.hits++;
       if (w.ammo === 0 && w.reserve > 0) setTimeout(() => this.alive && this.startReload(), 250);
@@ -334,7 +335,7 @@
       dx = dx / l + (Math.random() - 0.5) * sp; dy = dy / l + (Math.random() - 0.5) * sp; dz = dz / l + (Math.random() - 0.5) * sp;
       const n = Math.hypot(dx, dy, dz); dx /= n; dy /= n; dz /= n;
       K.combat.fireRocket(this, mz.x + dx * 0.3, mz.y + dy * 0.3, mz.z + dz * 0.3, dx, dy, dz, d, (a) => a.team !== 'squad' && a.team !== 'player');
-      K.fx.muzzle(mz.x, mz.y, mz.z, 2.2);
+      K.fx.muzzle(mz.x, mz.y, mz.z, 2.2); K.pwa.buzz(70);
       K.audio.shot(d.snd, this.pos);
       K.bus.emit('noise', { x: this.pos.x, y: this.pos.y, z: this.pos.z, r: d.noise, src: this, type: 'shot' });
       K.bus.emit('playerShot', { w: d, res: null });
@@ -431,7 +432,7 @@
         K.bus.emit('tankFire', { x: ex, y: ey, z: ez });
       }
     }
-    onDamaged(dmg) { K.audio.hurt(); K.ui.damageFlash(dmg); CAM.shake(0.15 + dmg * 0.01); }
+    onDamaged(dmg) { K.audio.hurt(); K.ui.damageFlash(dmg); CAM.shake(0.15 + dmg * 0.01); K.pwa.buzz(Math.min(120, 25 + dmg * 2)); }
     onDowned() { this.crouched = false; this.aiming = false; K.ui.toast('YARALANDIN — ekip seni ayağa kaldırmalı!', 'bad'); K.audio.say('Lider yaralandı!'); }
     inWater() { this.pos.copy(this.lastSafePos); this.damage(25, null); K.ui.toast('Sudan çıkarıldın', 'bad'); }
   }

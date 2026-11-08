@@ -24,7 +24,7 @@
       let i = 0;
       const scenes = {};
       for (const k of keys) {
-        try { const g = await K.assets.loadGLB(D.files[k]); scenes[k] = g.scene; }
+        try { const g = await K.assets.loadGLB(D.files[k]); K.assets.shrink(g.scene); scenes[k] = g.scene; }
         catch (e) { this.failed[k] = e.message || String(e); console.warn('Harita modeli yüklenemedi:', k, e); }
         onStep && onStep(++i / keys.length, k);
       }

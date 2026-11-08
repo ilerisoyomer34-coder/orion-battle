@@ -706,6 +706,8 @@
       row('Müzik', rng('musVol', 0, 1, 0.05, () => K.audio.applyVolumes()));
       row('Telsiz konuşmaları (sesli)', sel('voice', [['false', 'Kapalı'], ['true', 'Açık (tarayıcı sesi)']]));
       row('Dokunmatik kontroller', sel('touch', [['auto', 'Otomatik'], ['on', 'Açık'], ['off', 'Kapalı']], () => this.updateTouchVisibility()));
+      row('Titreşim (telefon)', sel('vibrate', [['true', 'Açık'], ['false', 'Kapalı']]));
+      row('Görevde otomatik tam ekran (telefon)', sel('autoFull', [['true', 'Açık'], ['false', 'Kapalı']]));
       row('Şehir trafiği', sel('traffic', [['true', 'Açık'], ['false', 'Kapalı']]));
       row('FPS göster', sel('showFps', [['false', 'Hayır'], ['true', 'Evet']], () => { $('fps').classList.toggle('hidden', !s.showFps); }));
       $('settingsBack').onclick = () => { K.audio.ui(); if (this.settingsBack === 'pause') this.screen('pause'); else if (this.settingsBack === 'hq') K.game.toHQ(); else this.screen('menu'); };
@@ -735,6 +737,8 @@
       $('btnNew').classList.toggle('primary', !has);
       const d = K.save.data;
       $('menuRank').textContent = has ? `${K.prog.rankDef().name} · ${d.xp} XP · ${Object.values(d.missions).filter((m) => m.done).length} görev tamamlandı` : '';
+      K.pwa.updateButtons();
+      K.pwa.offlineStatus().then((st) => { const el = $('offlineTxt'); if (!el) return; el.textContent = !st ? '' : st.have >= st.total ? '✓ Çevrimdışı oynanabilir — tüm modeller cihazda' : `Çevrimdışı hazırlık: ${st.have}/${st.total} model cihazda`; }).catch(() => {});
     },
     // ─────────── Dokunmatik kontroller
     get touchActive() { const t = K.save.data.settings.touch; return t === 'on' || (t === 'auto' && ('ontouchstart' in window || navigator.maxTouchPoints > 0) && window.matchMedia('(pointer: coarse)').matches); },

@@ -49,6 +49,7 @@
       K.bus.on('pointerunlock', () => { if (this.state === 'playing' && !this.paused && !K.ui.dialogOpen && !K.ui.mapOpen && !K.ui.keypadOpen && !K.ui.modal && !this._intentUnlock && !K.input.touch.enabled) this.pause(); });
       $('boot').classList.add('hidden');
       this.toMenu();
+      K.pwa.precacheAll();
       this.last = performance.now();
       requestAnimationFrame((t) => this.loop(t));
       window.addEventListener('resize', () => this.resize());
@@ -87,7 +88,7 @@
     },
     // ═════════ Durumlar ═════════
     toMenu() {
-      this.clearMission(); this.state = 'menu'; this.paused = false;
+      this.clearMission(); this.state = 'menu'; this.paused = false; K.pwa.releaseWake();
       K.world.setEnv('dusk', 'clear');
       this.ambientHQ();
       K.cam.mode = 'orbit'; K.cam.orbitCenter = { x: -160, y: 0, z: 195 }; K.cam.orbitR = 70; K.cam.orbitH = 24;
@@ -95,6 +96,7 @@
       K.audio.setLoop('music', 0.25, 0.2); K.audio.setLoop('pulse', 0); K.audio.setLoop('engine', 0);
     },
     toHQ(tab) {
+      K.pwa.releaseWake();
       if (this.state !== 'hq') { this.clearMission(); K.world.setEnv('dusk', 'clear'); this.ambientHQ(); }
       this.state = 'hq'; this.paused = false;
       K.cam.mode = 'orbit'; K.cam.orbitCenter = { x: -170, y: 0, z: 182 }; K.cam.orbitR = 26; K.cam.orbitH = 9;
@@ -231,6 +233,7 @@
         K.ui.letterbox(false, `GÖREV ${def.no} · ${def.title}`, `${def.place} — ${def.type}`);
       }
       K.audio.say(def.title);
+      K.pwa.enterPlay();
       setTimeout(() => this.relock(), 50);
     },
     // GLB silah modeli geç yüklendiğinde eldeki prosedürel yedeği değiştir
@@ -494,7 +497,7 @@
   };
 
   window.addEventListener('load', () => {
-    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+    K.pwa.init();
     G.init().catch((e) => { console.error(e); const t = $('bootTxt'); if (t) t.textContent = 'Başlatma hatası: ' + e.message; });
   });
 })();
