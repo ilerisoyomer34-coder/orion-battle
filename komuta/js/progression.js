@@ -72,22 +72,26 @@
       return S().skillPts > 0 && P.skillVal(id) < sk.max && (!sk.rank || S().rank >= sk.rank);
     },
     upgrade(id) { if (!P.canUpgrade(id)) return false; S().skills[id] = P.skillVal(id) + 1; S().skillPts--; K.save.write(); return true; },
-    squadMax() { return K.RANKS[S().rank].squad + (S().rank >= 1 && P.skillVal('support') >= 1 ? 1 : 0); },
-    unitUnlocked(u) { return S().rank >= (K.UNITS[u].rank || 0); },
+    // serbest mod: rütbe/ön koşul beklemeden her şey açık (kayıt silinmez)
+    free() { return K.save.data.settings.freeMode === true; },
+    squadMax() { if (P.free()) return Math.max(...K.RANKS.map((r) => r.squad)) + 1; return K.RANKS[S().rank].squad + (S().rank >= 1 && P.skillVal('support') >= 1 ? 1 : 0); },
+    unitUnlocked(u) { return P.free() || S().rank >= (K.UNITS[u].rank || 0); },
     rosterAvailable() { return K.ROSTER.filter((r) => P.unitUnlocked(r.unit)); },
-    weaponUnlocked(id) { const w = K.WEAPONS[id]; return w && S().rank >= (w.rank || 0); },
-    gadgetUnlocked(id) { const g = K.GADGETS[id]; return g && S().rank >= (g.rank || 0); },
-    outfitUnlocked(id) { const o = K.OUTFITS[id]; return o && S().rank >= (o.rank || 0); },
+    weaponUnlocked(id) { const w = K.WEAPONS[id]; return !!w && (P.free() || S().rank >= (w.rank || 0)); },
+    gadgetUnlocked(id) { const g = K.GADGETS[id]; return !!g && (P.free() || S().rank >= (g.rank || 0)); },
+    outfitUnlocked(id) { const o = K.OUTFITS[id]; return !!o && (P.free() || S().rank >= (o.rank || 0)); },
     vehicleUnlocked(t) {
+      if (P.free()) return true;
       const r = S().rank, m = S().missions;
       if (t === 'patrol') return r >= 3 && !!(m.m04 && m.m04.done);
       if (t === 'apc' || t === 'van') return r >= 4;
       if (t === 'tank' || t === 'heli') return r >= 7;
       return true;
     },
-    canTwoTeams() { return S().rank >= 5 || P.skillVal('twoTeams') >= 1; },
+    canTwoTeams() { return P.free() || S().rank >= 5 || P.skillVal('twoTeams') >= 1; },
     missionDone(id) { return !!(S().missions[id] && S().missions[id].done); },
     missionUnlocked(def) {
+      if (P.free()) return true;
       if (S().rank < (def.rank || 0)) return false;
       if (def.needs) for (const n of def.needs) if (!P.missionDone(n)) return false;
       return true;

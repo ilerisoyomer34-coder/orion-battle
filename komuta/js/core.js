@@ -430,6 +430,7 @@ window.K = window.K || {};
       // eksik alanları tamamla
       for (const k in def) if (d[k] === undefined) d[k] = def[k];
       for (const k in def.settings) if (d.settings[k] === undefined) d.settings[k] = def.settings[k];
+      if (d.settings.freeMode === undefined) d.settings.freeMode = window.KOMUTA_FREE === true;
       for (const k in def.stats) if (d.stats[k] === undefined) d.stats[k] = def.stats[k];
       for (const k in def.loadout) if (d.loadout[k] === undefined) d.loadout[k] = def.loadout[k];
       this.data = d;
