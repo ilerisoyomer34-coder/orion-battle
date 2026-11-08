@@ -18,9 +18,26 @@
     list(kind, style) { const L = this.byKind[kind] || []; return style ? L.filter((m) => m.def.style && m.def.style.includes(style)) : L; },
 
     // ── yükleme (dünya kurulmadan önce)
+    // sürülebilir araç dosyaları açılışı bekletmez (arka planda yüklenir)
+    vehicleFiles() {
+      const D = this.data(); if (!D) return [];
+      const S = new Set();
+      for (const t in D.vehicles) for (const v of [].concat(D.vehicles[t])) S.add(v.file);
+      return [...S].filter((k) => D.files[k]);
+    },
+    async loadVehicles(onStep) {
+      const D = this.data(); if (!D || !K.assets.enabled) return;
+      for (const k of this.vehicleFiles()) {
+        if (this.scenes[k]) { onStep && onStep(); continue; }
+        try { const g = await K.assets.loadGLB(D.files[k]); K.assets.shrink(g.scene); this.scenes[k] = g.scene; }
+        catch (e) { this.failed[k] = e.message || String(e); console.warn('Araç modeli yüklenemedi:', k, e); }
+        onStep && onStep();
+      }
+    },
     async load(onStep) {
       const D = this.data(); if (!D || !K.assets.enabled) return;
-      const keys = Object.keys(D.files);
+      const veh = new Set(this.vehicleFiles().filter((k) => !Object.values(D.models).some((m) => m.file === k)));
+      const keys = Object.keys(D.files).filter((k) => !veh.has(k));
       let i = 0;
       const scenes = {};
       for (const k of keys) {

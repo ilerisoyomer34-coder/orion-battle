@@ -688,7 +688,15 @@
       }
       sg.appendChild(srow); form.appendChild(sg); refresh();
       $('brBack').onclick = () => { K.audio.ui(); K.game.toHQ(); };
-      $('brStart').onclick = () => { K.audio.ui('ok'); d.loadout = Object.assign(d.loadout, { outfit: forced ? d.loadout.outfit : sel.outfit, primary: sel.primary, secondary: sel.secondary, gadget: sel.gadget, squad: sel.squad.slice() }); K.save.write(); K.game.startMission(def.id, Object.assign({}, sel, { outfit: forced || sel.outfit })); };
+      $('brStart').onclick = () => {
+        // modeller henüz yükleniyorsa bitince başla (tam ekran isteği tıklama anında yapılır)
+        if (!K.assets.bgDone && K.assets.bg) {
+          const b = $('brStart'); if (b.dataset.waiting) return;
+          b.dataset.waiting = '1'; K.pwa.enterPlay(); this.assetProgress(K.assets.bgProgress || 0);
+          K.assets.bg.then(() => { delete b.dataset.waiting; if ($('brStart') === b) b.onclick(); });
+          return;
+        }
+        K.audio.ui('ok'); d.loadout = Object.assign(d.loadout, { outfit: forced ? d.loadout.outfit : sel.outfit, primary: sel.primary, secondary: sel.secondary, gadget: sel.gadget, squad: sel.squad.slice() }); K.save.write(); K.game.startMission(def.id, Object.assign({}, sel, { outfit: forced || sel.outfit })); };
     },
     // ─────────── Ayarlar
     settings(back) {
@@ -729,6 +737,11 @@
       $('pHelp').onclick = () => this.help('pause');
       $('pQuit').onclick = () => { if (confirm('Görevi terk edip merkeze dönülsün mü? (ilerleme kaydedilmez)')) K.game.abortMission(); };
       $('mapClose').onclick = () => { this.closeMap(); K.game.relock(); };
+    },
+    assetProgress(p) {
+      const el = $('assetTxt'); if (!el) return;
+      el.textContent = p >= 1 ? '' : 'Askerler, siviller ve araçlar yükleniyor… %' + Math.round(p * 100);
+      const b = $('brStart'); if (b && b.dataset.waiting) b.textContent = p >= 1 ? 'OPERASYONU BAŞLAT ›' : 'Modeller yükleniyor… %' + Math.round(p * 100);
     },
     updateMenu() {
       const has = K.save.hasProgress();

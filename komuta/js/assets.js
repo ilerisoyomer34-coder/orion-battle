@@ -10,14 +10,19 @@
       this.loader = new THREE.GLTFLoader();
       this.tl = new THREE.TextureLoader();
     },
-    loadGLB(url) {
+    // telefon (düşük kalite): assets/lo/ altındaki küçük sürümler (normal/ORM dokusu yok, 256–512 px)
+    lo() { return K.game && K.game.qualityLevel && K.game.qualityLevel() === 'low'; },
+    tierUrl(url) { return this.lo() && /^assets\/(world|characters|props|weapons)\//.test(url) ? 'assets/lo/' + url.slice(7) : url; },
+    loadGLB(url0) {
+      const url = this.tierUrl(url0);
       if (!this.cache[url]) {
         // .glb.json: GLB baytları base64 olarak JSON içinde (yalnız JSON sunan barındırmalar için paketleme)
         if (/\.glb\.json$/.test(url)) {
           const base = url.slice(0, url.lastIndexOf('/') + 1);
           this.cache[url] = fetch(url).then((r) => { if (!r.ok) throw new Error(url + ' ' + r.status); return r.json(); }).then((j) => {
-            const bin = atob(j.glb), buf = new Uint8Array(bin.length);
-            for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+            const bin = atob(j.glb), n = bin.length, buf = new Uint8Array(n);
+            for (let i = 0; i < n; i++) buf[i] = bin.charCodeAt(i);
+            j.glb = null;
             return new Promise((res, rej) => this.loader.parse(buf.buffer, base, res, rej));
           });
         } else this.cache[url] = new Promise((res, rej) => this.loader.load(url, res, undefined, rej));
@@ -68,18 +73,18 @@
         for (const m of list) {
           const d = mats[m.name]; if (!d) continue;
           if (d.map) { m.map = this.texture(d.map, true); m.color.set(0xffffff); }
-          if (d.normalMap) m.normalMap = this.texture(d.normalMap, false);
-          if (d.ormMap) { const t = this.texture(d.ormMap, false); m.roughnessMap = t; m.metalnessMap = t; m.roughness = 1; m.metalness = 1; }
+          if (d.normalMap && !this.lo()) m.normalMap = this.texture(d.normalMap, false);
+          if (d.ormMap && !this.lo()) { const t = this.texture(d.ormMap, false); m.roughnessMap = t; m.metalnessMap = t; m.roughness = 1; m.metalness = 1; }
           if (d.emissiveMap) { m.emissiveMap = this.texture(d.emissiveMap, true); m.emissive = new THREE.Color(0xffffff); }
           m.needsUpdate = true;
         }
       });
     },
     // ── Karakterler (açılışta)
-    async loadCharacters(onStep) {
+    async loadCharacters(onStep, only) {
       if (!this.enabled) return;
       const C = K.ASSETDATA.characters;
-      const ids = Object.keys(C);
+      const ids = only || Object.keys(C);
       let i = 0;
       for (const id of ids) {
         const d = C[id];
@@ -90,9 +95,32 @@
           if (d.lod) { try { const gl = await this.loadGLB(d.lod); this.applyMaterials(gl.scene, d.materials); this.shrink(gl.scene); lod = gl.scene; } catch (e) { lod = null; } }
           this.chars[id] = { id, scene: g.scene, lod, data: d };
           K.glbChar.prepare(this.chars[id]);
-        } catch (e) { this.failed[id] = e.message || String(e); console.warn('Karakter modeli yüklenemedi:', id, e); }
+        } catch (e) { delete this.chars[id]; this.failed[id] = e.message || String(e); console.warn('Karakter modeli yüklenemedi:', id, e); }
         onStep && onStep(++i / ids.length, id);
+        await new Promise((r) => setTimeout(r, 0));   // menü akıcı kalsın
       }
+    },
+    // menü açıldıktan sonra: askerler, siviller, araçlar, helikopter (görev başlamadan önce beklenir)
+    background(onProgress) {
+      if (this.bg) return this.bg;
+      const C = K.ASSETDATA.characters;
+      const soldiers = Object.keys(C).filter((id) => !C[id].civ), civs = Object.keys(C).filter((id) => C[id].civ);
+      const vf = K.wa.vehicleFiles ? K.wa.vehicleFiles() : [];
+      const total = soldiers.length + civs.length + vf.length + 1;
+      let done = 0;
+      const tick = () => { done++; this.bgProgress = done / total; onProgress && onProgress(this.bgProgress); };
+      this.bgProgress = 0;
+      this.bg = (async () => {
+        await this.loadCharacters(tick, soldiers);
+        this.preloadWeapons(['kr4', 'pistol_s', 'ak47']);
+        await this.loadHeli(); tick();
+        await this.loadCharacters(tick, civs);
+        K.models.bindCivLooks();
+        if (K.wa.loadVehicles) await K.wa.loadVehicles(tick);
+        this.bgDone = true;
+        K.bus.emit('assetsReady');
+      })();
+      return this.bg;
     },
     async loadHeli() {
       if (!this.enabled) return;

@@ -16,14 +16,8 @@
       await step(0.08, 'Prosedürel dokular üretiliyor');
       K.tex.build(); K.models.init();
       K.assets.init();
-      await step(0.1, 'Asker modelleri yükleniyor');
-      await K.assets.loadCharacters((p, id) => { bar.style.width = Math.round((0.1 + p * 0.06) * 100) + '%'; txt.textContent = 'Asker modelleri yükleniyor (' + Math.round(p * 100) + '%)'; });
-      K.models.bindCivLooks();
-      await step(0.16, 'Helikopter modeli yükleniyor');
-      await K.assets.loadHeli();
-      await step(0.17, 'Şehir modelleri yükleniyor (Sketchfab)');
-      await K.wa.load((p) => { bar.style.width = Math.round((0.17 + p * 0.08) * 100) + '%'; txt.textContent = 'Şehir modelleri yükleniyor (' + Math.round(p * 100) + '%)'; });
-      K.assets.preloadWeapons(['kr4', 'pistol_s']);
+      await step(0.1, 'Şehir modelleri yükleniyor');
+      await K.wa.load((p) => { bar.style.width = Math.round((0.1 + p * 0.15) * 100) + '%'; txt.textContent = 'Şehir modelleri yükleniyor (' + Math.round(p * 100) + '%)'; });
       K.bus.on('weaponAssetReady', (asset) => this.refreshWeaponModels(asset));
       await step(0.25, 'Şehir inşa ediliyor');
       this.scene = new THREE.Scene();
@@ -49,7 +43,13 @@
       K.bus.on('pointerunlock', () => { if (this.state === 'playing' && !this.paused && !K.ui.dialogOpen && !K.ui.mapOpen && !K.ui.keypadOpen && !K.ui.modal && !this._intentUnlock && !K.input.touch.enabled) this.pause(); });
       $('boot').classList.add('hidden');
       this.toMenu();
-      K.pwa.precacheAll();
+      // askerler, siviller, araçlar ve helikopter menü açıkken yüklenir
+      K.ui.assetProgress(0);
+      K.assets.background((p) => K.ui.assetProgress(p)).then(() => {
+        K.ui.assetProgress(1);
+        if (this.state === 'menu' || this.state === 'hq') this.ambientHQ();
+        K.pwa.precacheAll();
+      });
       this.last = performance.now();
       requestAnimationFrame((t) => this.loop(t));
       window.addEventListener('resize', () => this.resize());

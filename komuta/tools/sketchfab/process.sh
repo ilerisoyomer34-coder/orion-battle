@@ -13,3 +13,5 @@ O p_jersey p_jersey 512; O p_tent p_tent 1024 0.12 0.02; O p_tower p_tower 512; 
 for c in c_eric c_nathan c_carla c_sophia c_claudia; do O $c $c 1024; O $c ${c}_lod 256 0.2; done
 for c in c_man2 c_man5 c_woman2 c_woman3 c_bizman; do O $c $c 512; done
 python3 gen.py   # assets/world, assets/characters ve js/worlddata.js
+# telefon sürümleri (assets/lo): kullanılmayan bina parçaları atılır, normal/ORM dokuları kaldırılır
+./lotier.sh

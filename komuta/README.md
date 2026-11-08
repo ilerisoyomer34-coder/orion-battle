@@ -28,7 +28,8 @@ Oyun bir PWA'dır: ana ekrana eklenince tam ekran, yatay ve tarayıcı çubuğu 
 - **Android (Chrome):** Oyunu https adresinden aç → ana menüde **⤓ Ana ekrana ekle** düğmesi (veya Chrome menüsü → Uygulamayı yükle).
 - **iPhone / iPad (Safari):** Ana menüde **⤓ Ana ekrana ekle** → Paylaş → Ana Ekrana Ekle.
 - Kurulu uygulama ilk açılışta silah modellerini de arka planda indirir; menüde "✓ Çevrimdışı oynanabilir" yazınca internet gerekmez.
-- Telefonda grafik kalitesi otomatik olarak **Düşük** seçilir: gölge yok, dokular 512 piksele küçültülür, uzaktaki eşyalar daha erken gizlenir.
+- Telefonda grafik kalitesi otomatik olarak **Düşük** seçilir ve `assets/lo/` altındaki küçük model sürümleri kullanılır (normal/ORM dokusu yok, 256–512 px): açılışta inen veri ~13 MB'tır (yüksek kalitede ~30 MB). Gölge yok, uzaktaki eşyalar daha erken gizlenir.
+- Menü yalnızca şehir modelleri yüklenince açılır; askerler, siviller, araçlar ve helikopter menüdeyken arka planda yüklenir. Bitmeden görev başlatılırsa düğme yükleme yüzdesini gösterir ve bitince görev başlar.
 - Görev başlarken telefon tam ekrana ve yatay kilide geçer, ekran kararmaz; isabet alınca ve ağır silahlarda titreşim olur (Ayarlar'dan kapatılabilir). Telefon dikey tutulursa "yatay çevirin" uyarısı çıkar.
 - PWA kurulumu için oyunun **https** ile (ör. GitHub Pages) sunulması gerekir; claude.ai yayın sayfası gibi gömülü sayfalarda kurulum ve çevrimdışı önbellek çalışmaz.
 
