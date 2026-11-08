@@ -1,0 +1,5 @@
+raw/
+opt/
+node_modules/
+meta.json
+*.jpg

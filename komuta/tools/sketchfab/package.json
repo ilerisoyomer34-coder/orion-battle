@@ -1,0 +1,12 @@
+{
+  "name": "komuta-sketchfab-tools",
+  "private": true,
+  "description": "Sketchfab modellerini indirme ve iyileştirme araçları (oyun çalışması için gerekmez)",
+  "dependencies": {
+    "@gltf-transform/core": "^4",
+    "@gltf-transform/extensions": "^4",
+    "@gltf-transform/functions": "^4",
+    "meshoptimizer": "^0.22",
+    "sharp": "^0.33"
+  }
+}
